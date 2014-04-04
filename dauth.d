@@ -1,8 +1,5 @@
 /++
 
-See also: https://crackstation.net/hashing-security.htm
-
-
 The default settings and behaviors in this module are specifically chosen
 with this order of priorities:
 
@@ -95,6 +92,9 @@ bool validateUser(string user, string pass)
 }
 ------------------------------------------
 
+For a good background on authentication, see:
+https://crackstation.net/hashing-security.htm
+
 +/
 
 module dauth;
@@ -104,6 +104,9 @@ import std.array;
 import ascii = std.ascii;
 import std.base64;
 import std.conv;
+import std.digest.crc;
+import std.digest.md;
+import std.digest.ripemd;
 import std.digest.sha;
 import std.exception;
 import std.random;
@@ -228,6 +231,45 @@ unittest
 	static assert( !isSaltedHash!(Bar!SHA1Digest) );
 }
 
+alias FuncDigestCodeOfObj = string function(std.digest.digest.Digest);
+alias FuncDigestFromCode  = std.digest.digest.Digest function(string);
+
+string getDigestCode(TDigest)(FuncDigestCodeOfObj digestCodeOfObj, TDigest digest)
+	if(isAnyDigest!TDigest)
+{
+	static if(is(TDigest : Digest))
+		return digestCodeOfObj(digest);
+	else
+	{
+		auto digestObj = new WrapperDigest!TDigest();
+		return digestCodeOfObj(digestObj);
+	}
+}
+
+string defaultDigestCodeOfObj(std.digest.digest.Digest digest)
+{
+	if     (cast( CRC32Digest     )digest) return "CRC32";
+	else if(cast( MD5Digest       )digest) return "MD5";
+	else if(cast( RIPEMD160Digest )digest) return "RIPEMD160";
+	else if(cast( SHA1Digest      )digest) return "SHA1";
+	else
+		//TODO: Use a proper UnknownDigestException
+		throw new Exception("Unknown digest type");
+}
+
+std.digest.digest.Digest defaultDigestFromCode(string digestCode)
+{
+	switch(digestCode)
+	{
+	case "CRC32":     return new CRC32Digest();
+	case "MD5":       return new MD5Digest();
+	case "RIPEMD160": return new RIPEMD160Digest();
+	case "SHA1":      return new SHA1Digest();
+	default:
+		throw new Exception("Unknown digest code");
+	}
+}
+
 /// Contains all the relevent information for a salted hash.
 /// Note that the digest type can be obtained via typeof(mySaltedHash.digest).
 struct SaltedHash(Digest) if(isAnyDigest!Digest)
@@ -245,23 +287,50 @@ struct SaltedHash(Digest) if(isAnyDigest!Digest)
 	
 	/// Encodes the digest, salt and hash into a convenient forward-compatible
 	/// string format, ready for insertion into a database.
-	string toString()
+	///
+	/// To support additional digests besides the built-in (Phobos's CRC32, MD5,
+	/// RIPEMD160 and SHA1), supply a custom function for digestCodeOfObj.
+	/// Your custom digestCodeOfObj only needs to handle OO-style digests.
+	/// As long as the OO-style digests were created using Phobos's
+	/// WrapperDigest template, the template-style version will be handled
+	/// automatically. You can defer to DAuth's defaultDigestCodeOfObj to
+	/// handle the built-in digests.
+	///
+	/// Example:
+	/// -------------------
+	/// import std.digest.digest;
+	/// import dauth;
+	/// 
+	/// struct BBQ42 {...}
+	/// static assert(isDigest!BBQ42);
+	/// alias BBQ42Digest = WrapperDigest!BBQ42;
+	/// 
+	/// string customDigestCodeOfObj(Digest digest)
+	/// {
+	///     if(cast(BBQ42Digest)digest)
+	///         return "BBQ42";
+	///     else
+	///         return defaultDigestCodeOfObj(digest);
+	/// }
+	/// 
+	/// void doStuff(SaltedHash!BBQ42 hash)
+	/// {
+	///     writeln( hash.toString(&customDigestCodeOfObj) );
+	/// }
+	/// -------------------
+	string toString(FuncDigestCodeOfObj digestCodeOfObj = &defaultDigestCodeOfObj)
 	{
 		Appender!string sink;
-		toString(sink);
+		toString(sink, digestCodeOfObj);
 		return sink.data;
 	}
 
 	///ditto
-	void toString(Sink)(ref Sink sink) if(isOutputRange!(Sink, const(char)))
+	void toString(Sink)(ref Sink sink, FuncDigestCodeOfObj digestCodeOfObj = &defaultDigestCodeOfObj)
+		if(isOutputRange!(Sink, const(char)))
 	{
 		sink.put('[');
-
-		//TODO: Encode digest type
-		sink.put('T');
-		sink.put('B');
-		sink.put('D');
-
+		sink.put(getDigestCode(digestCodeOfObj, digest));
 		sink.put(']');
 		Base64.encode(salt, sink);
 		sink.put('$');
@@ -307,6 +376,7 @@ SaltedHash!Digest saltedHash(Digest digest = new DefaultDigestClass(),
 	return saltedHashImpl(digest, password, salt);
 }
 
+//TODO: To reduce confusion with the phobos interface, all templated "Digest" should be "TDigest"
 private SaltedHash!Digest saltedHashImpl(Digest)(ref Digest digest, string password, Salt salt)
 	if(isAnyDigest!Digest)
 {
@@ -335,37 +405,35 @@ private SaltedHash!Digest saltedHashImpl(Digest)(ref Digest digest, string passw
 /// and therefore only known at runtime.
 ///
 /// Throws ConvException if the string is malformed.
-SaltedHash!(std.digest.digest.Digest) parseSaltedHash(string str)
+SaltedHash!Digest parseSaltedHash(string str,
+	FuncDigestFromCode digestFromCode = &defaultDigestFromCode)
 {
 	// No need to mess with UTF
 	auto bytes = cast(immutable(ubyte)[]) str;
 	
-	void eat(char c)
-	{
-		enforceEx!ConvException(!bytes.empty);
-		enforceEx!ConvException(bytes.front == cast(ubyte)c);
-		bytes.popFront();
-	}
-	
-	eat('[');
+	// Parse '['
+	enforceEx!ConvException(!bytes.empty);
+	enforceEx!ConvException(bytes.front == cast(ubyte)'[');
+	bytes.popFront();
 
-	//TODO: Decode and handle digest type
-	eat('T');
-	eat('B');
-	eat('D');
-
-	eat(']');
+	// Parse digest code
+	auto splitRBracket = bytes.findSplit([']']);
+	enforceEx!ConvException( !splitRBracket[0].empty && !splitRBracket[1].empty && !splitRBracket[2].empty );
+	auto digestCode = splitRBracket[0];
+	bytes = splitRBracket[2];
 	
-	auto parts = bytes.findSplit(['$']);
-	enforceEx!ConvException( !parts[0].empty && !parts[1].empty && !parts[2].empty );
-	auto salt = parts[0];
-	auto hash = parts[2];
+	// Split salt and hash
+	auto splitDollar = bytes.findSplit(['$']);
+	enforceEx!ConvException( !splitDollar[0].empty && !splitDollar[1].empty && !splitDollar[2].empty );
+	auto salt = splitDollar[0];
+	auto hash = splitDollar[2];
 	
+	// Construct SaltedHash
 	SaltedHash!(std.digest.digest.Digest) result;
 	result.salt     = Base64.decode(salt);
 	result.password = null;
 	result.hash     = Base64.decode(hash);
-	result.digest   = new SHA1Digest(); //TODO: Use digest type specified in the string
+	result.digest   = digestFromCode(cast(string)digestCode);
 	
 	return result;
 }
@@ -419,7 +487,7 @@ unittest
 	SaltedHash!SHA1 result1;
 	result1.hash = cast(AnyDigestType!SHA1) sha1Hash1;
 	result1.salt = cast(Salt)               sha1Hash2;
-	assert( result1.toString() == text("[TBD]", sha1Hash2Base64, "$", sha1Hash1Base64) );
+	assert( result1.toString() == text("[SHA1]", sha1Hash2Base64, "$", sha1Hash1Base64) );
 	
 	unitlog("Testing saltedHash([digest,] pass, salt)");
 	auto result2 = saltedHash!SHA1(plainText1, sha1Hash2);
@@ -467,7 +535,6 @@ unittest
 	assert(!isPasswordCorrect!SHA1(plainText1, wrongSalt.hash, wrongSalt.salt));
 	assert(!isPasswordCorrect     (plainText1, wrongSalt.hash, wrongSalt.salt, new SHA1Digest()));
 
-	import std.digest.md;
 	SaltedHash!MD5 wrongDigest;
 	wrongDigest.password = result2.password;
 	wrongDigest.salt     = result2.salt;
