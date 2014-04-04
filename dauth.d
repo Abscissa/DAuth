@@ -311,8 +311,8 @@ struct SaltedHash(Digest) if(isAnyDigest!Digest)
 	/// 
 	/// string customDigestCodeOfObj(Digest digest)
 	/// {
-	///     if(cast(BBQ42Digest)digest)
-	///         return "BBQ42";
+	///     if     (cast(BBQ42Digest)digest) return "BBQ42";
+	///     else if(cast(FAQ17Digest)digest) return "FAQ17";
 	///     else
 	///         return defaultDigestCodeOfObj(digest);
 	/// }
@@ -409,6 +409,37 @@ private SaltedHash!Digest saltedHashImpl(Digest)(ref Digest digest, string passw
 /// and therefore only known at runtime.
 ///
 /// Throws ConvException if the string is malformed.
+///
+/// To support additional digests besides the built-in (Phobos's CRC32, MD5,
+/// RIPEMD160 and SHA1), supply a custom function for digestFromCode.
+/// You can defer to DAuth's defaultDigestFromCode to handle the
+/// built-in digests.
+///
+/// Example:
+/// -------------------
+/// import std.digest.digest;
+/// import dauth;
+/// 
+/// struct BBQ42 {...}
+/// static assert(isDigest!BBQ42);
+/// alias BBQ42Digest = WrapperDigest!BBQ42;
+/// 
+/// Digest customDigestFromCode(string digestCode)
+/// {
+///     switch(digestCode)
+///     {
+///     case "BBQ42": return new BBQ42Digest();
+///     case "FAQ17": return new FAQ17Digest();
+///     default:
+///         return defaultDigestFromCode(digestCode);
+///     }
+/// }
+/// 
+/// void doStuff(string saltedHashString)
+/// {
+///     auto mySaltedHash = parseSaltedHash(saltedHashString, &customDigestFromCode);
+/// }
+/// -------------------
 SaltedHash!Digest parseSaltedHash(string str,
 	FuncDigestFromCode digestFromCode = &defaultDigestFromCode)
 {
