@@ -111,6 +111,8 @@ import std.exception;
 import std.random;
 import std.range;
 
+//TODO: Use "slow" compare to compare hashes.
+
 /// Enable DAuth unittests:
 ///    -unittest -version=DAuth_AllowWeakSecurity -version=DAuth_Unittest
 ///
@@ -374,7 +376,6 @@ Digest defaultDigestFromCode(string digestCode)
 struct SaltedHash(TDigest) if(isAnyDigest!TDigest)
 {
 	Salt salt;       /// The salt that was used.
-	string password; /// Plaintext version of the password.
 	
 	/// The hash of the salted password. To obtain a printable DB-friendly
 	/// string, pass this to std.digest.digest.toHexString.
@@ -448,11 +449,11 @@ be used instead, but SHA1 is the best Phobos has at the moment.)
 Supports both template-style and OO-style digests. See the documentation of
 std.digest.digest for details.
 
-Password and salt are optional. They will be generated at random if not provided.
+Salt is optional. It will be generated at random if not provided.
 +/
 SaltedHash!TDigest makeSaltedHash
 	(TDigest = DefaultDigest)
-	(string password = randomPassword(), Salt salt = randomSalt())
+	(string password, Salt salt = randomSalt())
 	if(isDigest!TDigest)
 {
 	validateStrength!TDigest();
@@ -463,7 +464,7 @@ SaltedHash!TDigest makeSaltedHash
 ///ditto
 SaltedHash!TDigest makeSaltedHash
 	(TDigest = DefaultDigest)
-	(TDigest digest, string password = randomPassword(), Salt salt = randomSalt())
+	(TDigest digest, string password, Salt salt = randomSalt())
 	if(isDigest!TDigest)
 {
 	validateStrength!TDigest();
@@ -471,8 +472,7 @@ SaltedHash!TDigest makeSaltedHash
 }
 
 ///ditto
-SaltedHash!Digest makeSaltedHash(Digest digest = new DefaultDigestClass(),
-	string password = randomPassword(), Salt salt = randomSalt())
+SaltedHash!Digest makeSaltedHash(Digest digest,	string password, Salt salt = randomSalt())
 {
 	validateStrength(digest);
 	return makeSaltedHashImpl(digest, password, salt);
@@ -482,9 +482,8 @@ private SaltedHash!TDigest makeSaltedHashImpl(TDigest)(ref TDigest digest, strin
 	if(isAnyDigest!TDigest)
 {
 	SaltedHash!TDigest ret;
-	ret.digest   = digest;
-	ret.salt     = salt;
-	ret.password = password;
+	ret.digest = digest;
+	ret.salt   = salt;
 	
 	static if(isDigest!TDigest) // template-based digest
 		ret.digest.start();
@@ -562,10 +561,9 @@ SaltedHash!Digest parseSaltedHash(string str,
 	
 	// Construct SaltedHash
 	SaltedHash!Digest result;
-	result.salt     = Base64.decode(salt);
-	result.password = null;
-	result.hash     = Base64.decode(hash);
-	result.digest   = digestFromCode(cast(string)digestCode);
+	result.salt   = Base64.decode(salt);
+	result.hash   = Base64.decode(hash);
+	result.digest = digestFromCode(cast(string)digestCode);
 	
 	return result;
 }
@@ -625,7 +623,6 @@ unittest
 	auto result2 = makeSaltedHash!SHA1(plainText1, sha1Hash2);
 	auto result3 = makeSaltedHash(new SHA1Digest(), plainText1, cast(Salt)sha1Hash2);
 
-	assert(result2.password   == result3.password);
 	assert(result2.salt       == result3.salt);
 	assert(result2.hash       == result3.hash);
 	assert(result2.toString() == result3.toString());
@@ -633,20 +630,17 @@ unittest
 
 	assert(result2.salt == result1.salt);
 	
-	unitlog("Testing makeSaltedHash(void)");
-	auto resultRand1 = makeSaltedHash!SHA1();
-	auto resultRand2 = makeSaltedHash!SHA1();
+	unitlog("Testing makeSaltedHash(pass)");
+	auto resultRand1 = makeSaltedHash!SHA1(randomPassword());
+	auto resultRand2 = makeSaltedHash!SHA1(randomPassword());
 
-	assert(resultRand1.password != result1.password);
 	assert(resultRand1.salt != result1.salt);
 
-	assert(resultRand1.password != resultRand2.password);
 	assert(resultRand1.salt != resultRand2.salt);
 	assert(resultRand1.hash != resultRand2.hash);
 
 	unitlog("Testing parseSaltedHash(void)");
 	auto result2Parsed = parseSaltedHash( result2.toString() );
-	assert(result2Parsed.password is null);
 	assert(result2.salt       == result2Parsed.salt);
 	assert(result2.hash       == result2Parsed.hash);
 	assert(result2.toString() == result2Parsed.toString());
@@ -668,9 +662,8 @@ unittest
 	assert(!isPasswordCorrect     (plainText1, wrongSalt.hash, wrongSalt.salt, new SHA1Digest()));
 
 	SaltedHash!MD5 wrongDigest;
-	wrongDigest.password = result2.password;
-	wrongDigest.salt     = result2.salt;
-	wrongDigest.hash     = cast(ubyte[16])result2.hash[0..16];
+	wrongDigest.salt = result2.salt;
+	wrongDigest.hash = cast(ubyte[16])result2.hash[0..16];
 	
 	assert(!isPasswordCorrect    (plainText1, wrongDigest));
 	assert(!isPasswordCorrect!MD5(plainText1, wrongDigest.hash, wrongDigest.salt));
