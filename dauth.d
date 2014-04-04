@@ -292,6 +292,15 @@ SaltedHash!Digest saltedHash
 }
 
 ///ditto
+SaltedHash!Digest saltedHash
+	(Digest = DefaultDigest)
+	(Digest digest, string password = randomPassword(), Salt salt = randomSalt())
+	if(isDigest!Digest)
+{
+	return saltedHashImpl(digest, password, salt);
+}
+
+///ditto
 SaltedHash!Digest saltedHash(Digest digest = new DefaultDigestClass(),
 	string password = randomPassword(), Salt salt = randomSalt())
 {
@@ -362,10 +371,11 @@ SaltedHash!(std.digest.digest.Digest) parseSaltedHash(string str)
 }
 
 /// Validates a password against an existing salted hash.
-bool isPasswordCorrect(Hash)(string password, SaltedHash hash)
+bool isPasswordCorrect(SHash)(string password, SHash sHash)
+	if(isSaltedHash!SHash)
 {
-	auto testHash = saltedHash(hash.digest, password, hash.salt);
-	return testHash.hash == hash.hash;
+	auto testHash = saltedHash(sHash.digest, password, sHash.salt);
+	return testHash.hash == sHash.hash;
 }
 
 ///ditto
@@ -411,7 +421,7 @@ unittest
 	result1.salt = cast(Salt)               sha1Hash2;
 	assert( result1.toString() == text("[TBD]", sha1Hash2Base64, "$", sha1Hash1Base64) );
 	
-	unitlog("Testing saltedHash(pass, salt)");
+	unitlog("Testing saltedHash([digest,] pass, salt)");
 	auto result2 = saltedHash!SHA1(plainText1, sha1Hash2);
 	auto result3 = saltedHash(new SHA1Digest(), plainText1, cast(Salt)sha1Hash2);
 
@@ -419,6 +429,7 @@ unittest
 	assert(result2.salt       == result3.salt);
 	assert(result2.hash       == result3.hash);
 	assert(result2.toString() == result3.toString());
+	assert(result2.toString() == saltedHash(SHA1(), plainText1, sha1Hash2).toString());
 
 	assert(result2.salt == result1.salt);
 	
@@ -439,6 +450,32 @@ unittest
 	assert(result2.salt       == result2Parsed.salt);
 	assert(result2.hash       == result2Parsed.hash);
 	assert(result2.toString() == result2Parsed.toString());
+	
+	unitlog("Testing isPasswordCorrect");
+	assert(isPasswordCorrect     (plainText1, result2));
+	assert(isPasswordCorrect!SHA1(plainText1, result2.hash, result2.salt));
+	assert(isPasswordCorrect     (plainText1, result2.hash, result2.salt, new SHA1Digest()));
+
+	assert(!isPasswordCorrect     ("bad pass", result2));
+	assert(!isPasswordCorrect!SHA1("bad pass", result2.hash, result2.salt));
+	assert(!isPasswordCorrect     ("bad pass", result2.hash, result2.salt, new SHA1Digest()));
+
+	auto wrongSalt = result2;
+	wrongSalt.salt = wrongSalt.salt[4..$-1];
+	
+	assert(!isPasswordCorrect     (plainText1, wrongSalt));
+	assert(!isPasswordCorrect!SHA1(plainText1, wrongSalt.hash, wrongSalt.salt));
+	assert(!isPasswordCorrect     (plainText1, wrongSalt.hash, wrongSalt.salt, new SHA1Digest()));
+
+	import std.digest.md;
+	SaltedHash!MD5 wrongDigest;
+	wrongDigest.password = result2.password;
+	wrongDigest.salt     = result2.salt;
+	wrongDigest.hash     = cast(ubyte[16])result2.hash[0..16];
+	
+	assert(!isPasswordCorrect    (plainText1, wrongDigest));
+	assert(!isPasswordCorrect!MD5(plainText1, wrongDigest.hash, wrongDigest.salt));
+	assert(!isPasswordCorrect    (plainText1, wrongDigest.hash, wrongDigest.salt, new MD5Digest()));
 }
 
 /++
