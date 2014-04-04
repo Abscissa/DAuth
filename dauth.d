@@ -35,16 +35,16 @@ Typical usage:
 ----------------------------------------
 void setUserPassword(string user, string pass)
 {
-	auto mySaltedHash = saltedHash(pass);
-	string hashString = mySaltedHash.toString();
+	auto saltedHash = makeSaltedHash(pass);
+	string hashString = saltedHash.toString();
 	saveUserInfo(user, hashString);
 }
 
 bool validateUser(string user, string pass)
 {
 	string hashString = loadUserPassword(user);
-	auto mySaltedHash = parseSaltedHash(hashString);
-	return isPasswordCorrect(pass, mySaltedHash);
+	auto saltedHash = parseSaltedHash(hashString);
+	return isPasswordCorrect(pass, saltedHash);
 }
 ----------------------------------------
 
@@ -58,8 +58,8 @@ developments:
 - Passwords can be hashed using any Phobos-compatibe digest (See std.digest.digest).
 - Salts can be provided manually, or have a user-defined length.
 - Hashes and salts can be stored in any way or format desired. This is because
-the SaltedHash struct returned by saltedHash() and parseSaltedHash() provides
-easy access to the hash, the salt, and the digest used.
+the SaltedHash struct returned by makeSaltedHash() and parseSaltedHash()
+provides easy access to the hash, the salt, and the digest used.
 - The method of combining the salt and raw password can be user-defined.
 - The toString supports OutputRange sinks, to avoid unnecessary allocations.
 - Passwords, salts, and randomized tokens (for one-use URLs) can all be
@@ -78,7 +78,7 @@ void setUserPassword(string user, string pass)
 	auto salt = randomSalt(rand, 64);
 
 	// Note: MD5 should never be used for real passwords.
-	auto mySaltedHash = saltedHash!MD5(pass, salt);
+	auto mySaltedHash = makeSaltedHash!MD5(pass, salt);
 	
 	saveUserInfo(user, mySaltedHash.hash, mySaltedHash.salt);
 }
@@ -355,33 +355,33 @@ std.digest.digest for details.
 
 Password and salt are optional. They will be generated at random if not provided.
 +/
-SaltedHash!Digest saltedHash
+SaltedHash!Digest makeSaltedHash
 	(Digest = DefaultDigest)
 	(string password = randomPassword(), Salt salt = randomSalt())
 	if(isDigest!Digest)
 {
 	Digest digest;
-	return saltedHashImpl(digest, password, salt);
+	return makeSaltedHashImpl(digest, password, salt);
 }
 
 ///ditto
-SaltedHash!Digest saltedHash
+SaltedHash!Digest makeSaltedHash
 	(Digest = DefaultDigest)
 	(Digest digest, string password = randomPassword(), Salt salt = randomSalt())
 	if(isDigest!Digest)
 {
-	return saltedHashImpl(digest, password, salt);
+	return makeSaltedHashImpl(digest, password, salt);
 }
 
 ///ditto
-SaltedHash!Digest saltedHash(Digest digest = new DefaultDigestClass(),
+SaltedHash!Digest makeSaltedHash(Digest digest = new DefaultDigestClass(),
 	string password = randomPassword(), Salt salt = randomSalt())
 {
-	return saltedHashImpl(digest, password, salt);
+	return makeSaltedHashImpl(digest, password, salt);
 }
 
 //TODO: To reduce confusion with the phobos interface, all templated "Digest" should be "TDigest"
-private SaltedHash!Digest saltedHashImpl(Digest)(ref Digest digest, string password, Salt salt)
+private SaltedHash!Digest makeSaltedHashImpl(Digest)(ref Digest digest, string password, Salt salt)
 	if(isAnyDigest!Digest)
 {
 	SaltedHash!Digest ret;
@@ -435,9 +435,9 @@ private SaltedHash!Digest saltedHashImpl(Digest)(ref Digest digest, string passw
 ///     }
 /// }
 /// 
-/// void doStuff(string saltedHashString)
+/// void doStuff(string hashString)
 /// {
-///     auto mySaltedHash = parseSaltedHash(saltedHashString, &customDigestFromCode);
+///     auto saltedHash = parseSaltedHash(hashString, &customDigestFromCode);
 /// }
 /// -------------------
 SaltedHash!Digest parseSaltedHash(string str,
@@ -477,7 +477,7 @@ SaltedHash!Digest parseSaltedHash(string str,
 bool isPasswordCorrect(SHash)(string password, SHash sHash)
 	if(isSaltedHash!SHash)
 {
-	auto testHash = saltedHash(sHash.digest, password, sHash.salt);
+	auto testHash = makeSaltedHash(sHash.digest, password, sHash.salt);
 	return testHash.hash == sHash.hash;
 }
 
@@ -487,7 +487,7 @@ bool isPasswordCorrect(Digest = DefaultDigest)
 	if(isDigest!Digest)
 {
 	Digest digest;
-	auto testHash = saltedHash(digest, password, salt);
+	auto testHash = makeSaltedHash(digest, password, salt);
 	return testHash.hash == hash;
 }
 
@@ -495,7 +495,7 @@ bool isPasswordCorrect(Digest = DefaultDigest)
 bool isPasswordCorrect(string password,
 	ubyte[] hash, Salt salt, Digest digest = new DefaultDigestClass())
 {
-	auto testHash = saltedHash(digest, password, salt);
+	auto testHash = makeSaltedHash(digest, password, salt);
 	return testHash.hash == hash;
 }
 
@@ -524,21 +524,21 @@ unittest
 	result1.salt = cast(Salt)               sha1Hash2;
 	assert( result1.toString() == text("[SHA1]", sha1Hash2Base64, "$", sha1Hash1Base64) );
 	
-	unitlog("Testing saltedHash([digest,] pass, salt)");
-	auto result2 = saltedHash!SHA1(plainText1, sha1Hash2);
-	auto result3 = saltedHash(new SHA1Digest(), plainText1, cast(Salt)sha1Hash2);
+	unitlog("Testing makeSaltedHash([digest,] pass, salt)");
+	auto result2 = makeSaltedHash!SHA1(plainText1, sha1Hash2);
+	auto result3 = makeSaltedHash(new SHA1Digest(), plainText1, cast(Salt)sha1Hash2);
 
 	assert(result2.password   == result3.password);
 	assert(result2.salt       == result3.salt);
 	assert(result2.hash       == result3.hash);
 	assert(result2.toString() == result3.toString());
-	assert(result2.toString() == saltedHash(SHA1(), plainText1, sha1Hash2).toString());
+	assert(result2.toString() == makeSaltedHash(SHA1(), plainText1, sha1Hash2).toString());
 
 	assert(result2.salt == result1.salt);
 	
-	unitlog("Testing saltedHash(void)");
-	auto resultRand1 = saltedHash!SHA1();
-	auto resultRand2 = saltedHash!SHA1();
+	unitlog("Testing makeSaltedHash(void)");
+	auto resultRand1 = makeSaltedHash!SHA1();
+	auto resultRand2 = makeSaltedHash!SHA1();
 
 	assert(resultRand1.password != result1.password);
 	assert(resultRand1.salt != result1.salt);
