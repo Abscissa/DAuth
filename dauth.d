@@ -269,11 +269,11 @@ class KnownInsecureException : Exception
 
 /// Like std.digest.digest.isDigest, but also accepts OO-style digests
 /// (ie. classes deriving from interface std.digest.digest.Digest)
-template isAnyDigest(Digest)
+template isAnyDigest(TDigest)
 {
 	enum isAnyDigest =
-		isDigest!Digest ||
-		is(Digest : std.digest.digest.Digest);
+		isDigest!TDigest ||
+		is(TDigest : Digest);
 }
 
 version(DAuth_Unittest)
@@ -288,13 +288,13 @@ unittest
 
 /// Like std.digest.digest.DigestType, but also accepts OO-style digests
 /// (ie. classes deriving from interface std.digest.digest.Digest)
-template AnyDigestType(Digest)
+template AnyDigestType(TDigest)
 {
-	static assert(isAnyDigest!Digest,
-		Digest.stringof ~ " is not a template-style or OO-style digest (fails isAnyDigest!T)");
+	static assert(isAnyDigest!TDigest,
+		TDigest.stringof ~ " is not a template-style or OO-style digest (fails isAnyDigest!T)");
 	
-	static if(isDigest!Digest)
-		alias AnyDigestType = DigestType!Digest;
+	static if(isDigest!TDigest)
+		alias AnyDigestType = DigestType!TDigest;
 	else
 		alias AnyDigestType = ubyte[];
 }
@@ -309,7 +309,7 @@ unittest
 	static assert( !is(AnyDigestType!Object) );
 }
 
-/// Tests if the type is an instance of struct SaltedHash(Digest)
+/// Tests if the type is an instance of struct SaltedHash(some digest)
 template isSaltedHash(T)
 {
 	enum isSaltedHash =
@@ -334,10 +334,7 @@ unittest
 	static assert( !isSaltedHash!(Bar!SHA1Digest) );
 }
 
-alias FuncDigestCodeOfObj = string function(std.digest.digest.Digest);
-alias FuncDigestFromCode  = std.digest.digest.Digest function(string);
-
-string getDigestCode(TDigest)(FuncDigestCodeOfObj digestCodeOfObj, TDigest digest)
+string getDigestCode(TDigest)(string function(Digest) digestCodeOfObj, TDigest digest)
 	if(isAnyDigest!TDigest)
 {
 	static if(is(TDigest : Digest))
@@ -349,7 +346,7 @@ string getDigestCode(TDigest)(FuncDigestCodeOfObj digestCodeOfObj, TDigest diges
 	}
 }
 
-string defaultDigestCodeOfObj(std.digest.digest.Digest digest)
+string defaultDigestCodeOfObj(Digest digest)
 {
 	if     (cast( CRC32Digest     )digest) return "CRC32";
 	else if(cast( MD5Digest       )digest) return "MD5";
@@ -359,7 +356,7 @@ string defaultDigestCodeOfObj(std.digest.digest.Digest digest)
 		throw new UnknownDigestException("Unknown digest type");
 }
 
-std.digest.digest.Digest defaultDigestFromCode(string digestCode)
+Digest defaultDigestFromCode(string digestCode)
 {
 	switch(digestCode)
 	{
@@ -374,18 +371,18 @@ std.digest.digest.Digest defaultDigestFromCode(string digestCode)
 
 /// Contains all the relevent information for a salted hash.
 /// Note that the digest type can be obtained via typeof(mySaltedHash.digest).
-struct SaltedHash(Digest) if(isAnyDigest!Digest)
+struct SaltedHash(TDigest) if(isAnyDigest!TDigest)
 {
 	Salt salt;       /// The salt that was used.
 	string password; /// Plaintext version of the password.
 	
 	/// The hash of the salted password. To obtain a printable DB-friendly
 	/// string, pass this to std.digest.digest.toHexString.
-	AnyDigestType!Digest hash;
+	AnyDigestType!TDigest hash;
 	
 	/// The digest that was used for hashing.
 	/// Note, this may get reset and reused.
-	Digest digest;
+	TDigest digest;
 	
 	/// Encodes the digest, salt and hash into a convenient forward-compatible
 	/// string format, ready for insertion into a database.
@@ -420,7 +417,7 @@ struct SaltedHash(Digest) if(isAnyDigest!Digest)
 	///     writeln( hash.toString(&customDigestCodeOfObj) );
 	/// }
 	/// -------------------
-	string toString(FuncDigestCodeOfObj digestCodeOfObj = &defaultDigestCodeOfObj)
+	string toString(string function(Digest) digestCodeOfObj = &defaultDigestCodeOfObj)
 	{
 		Appender!string sink;
 		toString(sink, digestCodeOfObj);
@@ -428,7 +425,7 @@ struct SaltedHash(Digest) if(isAnyDigest!Digest)
 	}
 
 	///ditto
-	void toString(Sink)(ref Sink sink, FuncDigestCodeOfObj digestCodeOfObj = &defaultDigestCodeOfObj)
+	void toString(Sink)(ref Sink sink, string function(Digest) digestCodeOfObj = &defaultDigestCodeOfObj)
 		if(isOutputRange!(Sink, const(char)))
 	{
 		sink.put('[');
@@ -453,23 +450,23 @@ std.digest.digest for details.
 
 Password and salt are optional. They will be generated at random if not provided.
 +/
-SaltedHash!Digest makeSaltedHash
-	(Digest = DefaultDigest)
+SaltedHash!TDigest makeSaltedHash
+	(TDigest = DefaultDigest)
 	(string password = randomPassword(), Salt salt = randomSalt())
-	if(isDigest!Digest)
+	if(isDigest!TDigest)
 {
-	validateStrength!Digest();
-	Digest digest;
+	validateStrength!TDigest();
+	TDigest digest;
 	return makeSaltedHashImpl(digest, password, salt);
 }
 
 ///ditto
-SaltedHash!Digest makeSaltedHash
-	(Digest = DefaultDigest)
-	(Digest digest, string password = randomPassword(), Salt salt = randomSalt())
-	if(isDigest!Digest)
+SaltedHash!TDigest makeSaltedHash
+	(TDigest = DefaultDigest)
+	(TDigest digest, string password = randomPassword(), Salt salt = randomSalt())
+	if(isDigest!TDigest)
 {
-	validateStrength!Digest();
+	validateStrength!TDigest();
 	return makeSaltedHashImpl(digest, password, salt);
 }
 
@@ -481,16 +478,15 @@ SaltedHash!Digest makeSaltedHash(Digest digest = new DefaultDigestClass(),
 	return makeSaltedHashImpl(digest, password, salt);
 }
 
-//TODO: To reduce confusion with the phobos interface, all templated "Digest" should be "TDigest"
-private SaltedHash!Digest makeSaltedHashImpl(Digest)(ref Digest digest, string password, Salt salt)
-	if(isAnyDigest!Digest)
+private SaltedHash!TDigest makeSaltedHashImpl(TDigest)(ref TDigest digest, string password, Salt salt)
+	if(isAnyDigest!TDigest)
 {
-	SaltedHash!Digest ret;
+	SaltedHash!TDigest ret;
 	ret.digest   = digest;
 	ret.salt     = salt;
 	ret.password = password;
 	
-	static if(isDigest!Digest) // template-based digest
+	static if(isDigest!TDigest) // template-based digest
 		ret.digest.start();
 	else
 		ret.digest.reset(); // OO-based digest
@@ -542,7 +538,7 @@ private SaltedHash!Digest makeSaltedHashImpl(Digest)(ref Digest digest, string p
 /// }
 /// -------------------
 SaltedHash!Digest parseSaltedHash(string str,
-	FuncDigestFromCode digestFromCode = &defaultDigestFromCode)
+	Digest function(string) digestFromCode = &defaultDigestFromCode)
 {
 	// No need to mess with UTF
 	auto bytes = cast(immutable(ubyte)[]) str;
@@ -565,7 +561,7 @@ SaltedHash!Digest parseSaltedHash(string str,
 	auto hash = splitDollar[2];
 	
 	// Construct SaltedHash
-	SaltedHash!(std.digest.digest.Digest) result;
+	SaltedHash!Digest result;
 	result.salt     = Base64.decode(salt);
 	result.password = null;
 	result.hash     = Base64.decode(hash);
@@ -583,11 +579,11 @@ bool isPasswordCorrect(SHash)(string password, SHash sHash)
 }
 
 ///ditto
-bool isPasswordCorrect(Digest = DefaultDigest)
-	(string password, DigestType!Digest hash, Salt salt)
-	if(isDigest!Digest)
+bool isPasswordCorrect(TDigest = DefaultDigest)
+	(string password, DigestType!TDigest hash, Salt salt)
+	if(isDigest!TDigest)
 {
-	Digest digest;
+	TDigest digest;
 	auto testHash = makeSaltedHash(digest, password, salt);
 	return testHash.hash == hash;
 }
