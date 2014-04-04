@@ -111,8 +111,6 @@ import std.exception;
 import std.random;
 import std.range;
 
-//TODO: Use "slow" compare to compare hashes.
-
 /// Enable DAuth unittests:
 ///    -unittest -version=DAuth_AllowWeakSecurity -version=DAuth_Unittest
 ///
@@ -573,7 +571,7 @@ bool isPasswordCorrect(SHash)(string password, SHash sHash)
 	if(isSaltedHash!SHash)
 {
 	auto testHash = makeSaltedHash(sHash.digest, password, sHash.salt);
-	return testHash.hash == sHash.hash;
+	return lengthConstantEquals(testHash.hash, sHash.hash);
 }
 
 ///ditto
@@ -583,7 +581,7 @@ bool isPasswordCorrect(TDigest = DefaultDigest)
 {
 	TDigest digest;
 	auto testHash = makeSaltedHash(digest, password, salt);
-	return testHash.hash == hash;
+	return lengthConstantEquals(testHash.hash, hash);
 }
 
 ///ditto
@@ -591,7 +589,7 @@ bool isPasswordCorrect(string password,
 	ubyte[] hash, Salt salt, Digest digest = new DefaultDigestClass())
 {
 	auto testHash = makeSaltedHash(digest, password, salt);
-	return testHash.hash == hash;
+	return lengthConstantEquals(testHash.hash, hash);
 }
 
 version(DAuth_Unittest)
@@ -1063,4 +1061,22 @@ private void initRand(Rand)(ref Rand rand)
 {
 	if(isSeedable!Rand)
 		rand.seed(unpredictableSeed);
+}
+
+/++
+Compare two arrays in "length-constant" time. This thwarts timing-based
+attacks by guaranteeing all comparisons (of a given length) take the same
+amount of time.
+
+See the section "Why does the hashing code on this page compare the hashes in
+"length-constant" time?" at:
+    https://crackstation.net/hashing-security.htm
++/
+bool lengthConstantEquals(ubyte[] a, ubyte[] b)
+{
+	auto diff = a.length ^ b.length;
+	for(int i = 0; i < a.length && i < b.length; i++)
+		diff |= a[i] ^ b[i];
+
+	return diff == 0;
 }
