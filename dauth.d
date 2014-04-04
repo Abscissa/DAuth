@@ -164,6 +164,11 @@ enum defaultSaltLength = 32;
 /// of 12 prevents a padding tilde from existing at the end of every token.
 enum defaultTokenStrength = 36;
 
+class UnknownDigestException : Exception
+{
+	this(string msg) { super(msg); }
+}
+
 /// Like std.digest.digest.isDigest, but also accepts OO-style digests
 /// (ie. classes deriving from interface std.digest.digest.Digest)
 template isAnyDigest(Digest)
@@ -253,8 +258,7 @@ string defaultDigestCodeOfObj(std.digest.digest.Digest digest)
 	else if(cast( RIPEMD160Digest )digest) return "RIPEMD160";
 	else if(cast( SHA1Digest      )digest) return "SHA1";
 	else
-		//TODO: Use a proper UnknownDigestException
-		throw new Exception("Unknown digest type");
+		throw new UnknownDigestException("Unknown digest type");
 }
 
 std.digest.digest.Digest defaultDigestFromCode(string digestCode)
@@ -266,7 +270,7 @@ std.digest.digest.Digest defaultDigestFromCode(string digestCode)
 	case "RIPEMD160": return new RIPEMD160Digest();
 	case "SHA1":      return new SHA1Digest();
 	default:
-		throw new Exception("Unknown digest code");
+		throw new UnknownDigestException("Unknown digest code");
 	}
 }
 
