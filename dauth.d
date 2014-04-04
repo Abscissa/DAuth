@@ -835,26 +835,3 @@ private void initRand(Rand)(ref Rand rand)
 	if(isSeedable!Rand)
 		rand.seed(unpredictableSeed);
 }
-
-alias FooTempl = SaltedHash!SHA1;
-alias FooOO    = SaltedHash!SHA1Digest;
-
-void main()
-{
-	import std.stdio;
-	FooTempl a; FooOO b;
-	writeln("12 random bytes: ", randomBytes(8).toHexString());
-	writeln("randomToken():   ", randomToken());
-	writeln("saltedHash():    ", saltedHash());
-	
-	auto str =
-		"[TBD]"~
-		cast(string) Base64.encode( cast(immutable(ubyte)[]) "the salt" )~
-		"$"~
-		cast(string) Base64.encode( cast(immutable(ubyte)[]) "the hash" );
-	writeln(str);
-	auto sh = parseSaltedHash(str);
-	writeln(sh.salt);
-	writeln(sh.hash);
-	
-}
