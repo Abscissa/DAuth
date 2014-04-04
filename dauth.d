@@ -112,13 +112,13 @@ import std.random;
 import std.range;
 
 /// Enable DAuth unittests:
-///    -unittest -version=DAuth_AllowWeakSecurity -version=Unittest_DAuth
+///    -unittest -version=DAuth_AllowWeakSecurity -version=DAuth_Unittest
 ///
 /// Enable DAuth unittests, but silence all non-error output:
-///    -unittest -version=DAuth_AllowWeakSecurity -version=Unittest_DAuth -version=Unittest_DAuth_Quiet
-version(Unittest_DAuth)
+///    -unittest -version=DAuth_AllowWeakSecurity -version=DAuth_Unittest -version=DAuth_Unittest_Quiet
+version(DAuth_Unittest)
 {
-	version(Unittest_DAuth_Quiet) {} else
+	version(DAuth_Unittest_Quiet) {} else
 		version = Loud_Unittest;
 	
 	version(Loud_Unittest)
@@ -276,7 +276,7 @@ template isAnyDigest(Digest)
 		is(Digest : std.digest.digest.Digest);
 }
 
-version(Unittest_DAuth)
+version(DAuth_Unittest)
 unittest
 {
 	struct Foo {}
@@ -299,7 +299,7 @@ template AnyDigestType(Digest)
 		alias AnyDigestType = ubyte[];
 }
 
-version(Unittest_DAuth)
+version(DAuth_Unittest)
 unittest
 {
 	struct Foo {}
@@ -318,7 +318,7 @@ template isSaltedHash(T)
 		is( SaltedHash!(typeof(T.init.digest)) == T );
 }
 
-version(Unittest_DAuth)
+version(DAuth_Unittest)
 unittest
 {
 	struct Foo {}
@@ -600,7 +600,7 @@ bool isPasswordCorrect(string password,
 	return testHash.hash == hash;
 }
 
-version(Unittest_DAuth)
+version(DAuth_Unittest)
 unittest
 {
 	// For validity of sanity checks, these sha1 and base64 strings
@@ -762,7 +762,7 @@ if( isUniformRNG!Rand && isOutputRange!(Sink, const(char)) )
 	}
 }
 
-version(Unittest_DAuth)
+version(DAuth_Unittest)
 unittest
 {
 	unitlog("Testing randomPassword");
@@ -915,7 +915,7 @@ Salt randomSalt(Rand = DefaultCryptoRand)(ref Rand rand, size_t length = default
 	return randomBytes(length, rand);
 }
 
-version(Unittest_DAuth)
+version(DAuth_Unittest)
 unittest
 {
 	unitlog("Testing randomSalt");
@@ -988,7 +988,7 @@ string randomToken(Rand = DefaultCryptoRand)(ref Rand rand, size_t strength = de
 	return TokenBase64.encode( randomBytes(strength, rand) );
 }
 
-version(Unittest_DAuth)
+version(DAuth_Unittest)
 unittest
 {
 	unitlog("Testing randomToken");
