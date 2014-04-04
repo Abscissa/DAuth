@@ -94,7 +94,6 @@ bool validateUser(string user, string pass)
 
 For a good background on authentication, see:
 https://crackstation.net/hashing-security.htm
-
 +/
 
 module dauth;
@@ -113,10 +112,10 @@ import std.random;
 import std.range;
 
 /// Enable DAuth unittests:
-///    -unittest -version=Unittest_DAuth
+///    -unittest -version=DAuth_AllowWeakSecurity -version=Unittest_DAuth
 ///
 /// Enable DAuth unittests, but silence all non-error output:
-///    -unittest -version=Unittest_DAuth -version=Unittest_DAuth_Quiet
+///    -unittest -version=DAuth_AllowWeakSecurity -version=Unittest_DAuth -version=Unittest_DAuth_Quiet
 version(Unittest_DAuth)
 {
 	version(Unittest_DAuth_Quiet) {} else
@@ -133,6 +132,11 @@ version(Unittest_DAuth)
 			stdout.flush();
 		}
 	}
+}
+
+version(DAuth_AllowWeakSecurity) {} else
+{
+	version = DisallowWeakSecurity;
 }
 
 // Defaults
@@ -164,9 +168,103 @@ enum defaultSaltLength = 32;
 /// of 12 prevents a padding tilde from existing at the end of every token.
 enum defaultTokenStrength = 36;
 
+/++
+Note, this only checks Phobos's RNG's and digests, and only by type. This
+works on a blacklist basis - it blindly accepts any Phobos-compatible RNG
+or digest it does not know about. This is only supplied as a convenience. It
+is always your own responsibility to select an appropriate algorithm for your
+own needs.
+
+And yes, unfortunately, this does currently rule out all RNG's and digests
+currently in Phobos (as of v2.065). They are all known to be fairly weak
+for password-hashing purposes, even SHA1 which despite being heavily used is
+known weak against increasingly practical highly-parallel (ex: GPU) brute-force
+attacks.
+
+For random number generators, you should use a CPRNG (cryptographically secure
+pseudorandom number generator):
+    http://en.wikipedia.org/wiki/Cryptographically_secure_pseudo-random_number_generator
+
+For digests, you should use an established "key stretching" algorithm
+( http://en.wikipedia.org/wiki/Key_stretching#History ), intended
+for password hashing. These contain deliberate inefficiencies that cannot be
+optimized away even with massive parallelization (such as a GPU cluster). These
+are NOT too inefficient to use for even high-traffic authentication, but they
+do thwart the parallelized brute force attacks that algorithms used for
+streaming data encryption, such as SHA1, are increasingly susceptible to.
+    https://crackstation.net/hashing-security.htm
++/
+bool isKnownInsecure(T)() if(isDigest!T || isUniformRNG!T)
+{
+	return
+		is(T == CRC32) ||
+		is(T == MD5) ||
+		is(T == RIPEMD160) ||
+		is(T == SHA1) ||
+		
+		// Requires to-be-released DMD 2.066:
+		//__traits(isSame, TemplateOf!T, LinearCongruentialEngine) ||
+		//__traits(isSame, TemplateOf!T, MersenneTwisterEngine) ||
+		//__traits(isSame, TemplateOf!T, XorshiftEngine);
+		is(T == MinstdRand0) ||
+		is(T == MinstdRand) ||
+		is(T == Mt19937) ||
+		is(T == Xorshift32) ||
+		is(T == Xorshift64) ||
+		is(T == Xorshift96) ||
+		is(T == Xorshift128) ||
+		is(T == Xorshift160) ||
+		is(T == Xorshift192) ||
+		is(T == Xorshift);
+}
+
+///ditto
+bool isKnownInsecure(T)(T digest) if(is(T : Digest))
+{
+	return
+		cast(CRC32Digest)digest ||
+		cast(MD5Digest)digest ||
+		cast(RIPEMD160Digest)digest ||
+		cast(SHA1Digest)digest;
+}
+
+private void validateStrength(T)() if(isDigest!T || isUniformRNG!T)
+{
+	version(DisallowWeakSecurity)
+	{
+		static if(isKnownInsecure!T())
+		{
+			pragma(msg, "ERROR: "~T.stringof~" - "~KnownInsecureException.message);
+			static assert(false);
+		}
+	}
+}
+
+private void validateStrength(Digest digest)
+{
+	version(DisallowWeakSecurity)
+	{
+		enforce(!isKnownInsecure(digest),
+			new KnownInsecureException(defaultDigestCodeOfObj(digest)));
+	}
+}
+
 class UnknownDigestException : Exception
 {
 	this(string msg) { super(msg); }
+}
+
+class KnownInsecureException : Exception
+{
+	static enum message =
+		"This is known to be weak for salted password hashing. "~
+		"If you understand and accept the risks, you can force DAuth "~
+		"to allow it with -version=DAuth_AllowWeakSecurity";
+	
+	this(string algoName)
+	{
+		super(algoName ~ " - " ~ message);
+	}
 }
 
 /// Like std.digest.digest.isDigest, but also accepts OO-style digests
@@ -360,6 +458,7 @@ SaltedHash!Digest makeSaltedHash
 	(string password = randomPassword(), Salt salt = randomSalt())
 	if(isDigest!Digest)
 {
+	validateStrength!Digest();
 	Digest digest;
 	return makeSaltedHashImpl(digest, password, salt);
 }
@@ -370,6 +469,7 @@ SaltedHash!Digest makeSaltedHash
 	(Digest digest, string password = randomPassword(), Salt salt = randomSalt())
 	if(isDigest!Digest)
 {
+	validateStrength!Digest();
 	return makeSaltedHashImpl(digest, password, salt);
 }
 
@@ -377,6 +477,7 @@ SaltedHash!Digest makeSaltedHash
 SaltedHash!Digest makeSaltedHash(Digest digest = new DefaultDigestClass(),
 	string password = randomPassword(), Salt salt = randomSalt())
 {
+	validateStrength(digest);
 	return makeSaltedHashImpl(digest, password, salt);
 }
 
