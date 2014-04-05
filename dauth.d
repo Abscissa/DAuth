@@ -110,6 +110,7 @@ import std.digest.sha;
 import std.exception;
 import std.random;
 import std.range;
+import std.typecons;
 
 /// Enable DAuth unittests:
 ///    -unittest -version=DAuth_AllowWeakSecurity -version=DAuth_Unittest
@@ -369,6 +370,74 @@ Digest defaultDigestFromCode(string digestCode)
 	}
 }
 
+/// A reference-counted type for passwords. The memory containing the password
+/// is automatically zeroed-out when there are no more references or when
+/// a new password is assigned.
+///
+/// If you keep any direct references to Password.data, be aware it may get cleared.
+alias Password = RefCounted!PasswordData;
+
+/// Payload of Password
+private struct PasswordData
+{
+	private ubyte[] _data;
+	
+	@property ubyte[] data()
+	{
+		return _data;
+	}
+	
+	@property size_t length() const
+	{
+		return _data.length;
+	}
+	
+	void opAssign(PasswordData rhs)
+	{
+		opAssign(rhs._data);
+	}
+	
+	void opAssign(ubyte[] rhs)
+	{
+		clear();
+		this._data = rhs;
+	}
+	
+	~this()
+	{
+		clear();
+	}
+
+	private void clear()
+	{
+		_data[] = 0;
+	}
+}
+
+Password toPassword(ubyte[] password)
+{
+	return Password(password);
+}
+
+Password toPassword(char[] password)
+{
+	return Password(cast(ubyte[])password);
+}
+
+/// This function exists as a convenience in case you need it, HOWEVER it's
+/// recommended to design your code so you DON'T need to use this:
+/// Using this to create a Password cannot protect the in-memory data of your
+/// original string because a string's data is immutable (this function must
+/// .dup the memory).
+///
+/// While immutability usually improves safety, you should avoid ever storing
+/// unhashed passwords in immutables because they cannot be reliably
+/// zero-ed out.
+Password dupPassword(string password)
+{
+	return toPassword(password.dup);
+}
+
 /// Contains all the relevent information for a salted hash.
 /// Note that the digest type can be obtained via typeof(mySaltedHash.digest).
 struct SaltedHash(TDigest) if(isAnyDigest!TDigest)
@@ -451,7 +520,7 @@ Salt is optional. It will be generated at random if not provided.
 +/
 SaltedHash!TDigest makeSaltedHash
 	(TDigest = DefaultDigest)
-	(string password, Salt salt = randomSalt())
+	(Password password, Salt salt = randomSalt())
 	if(isDigest!TDigest)
 {
 	validateStrength!TDigest();
@@ -462,7 +531,7 @@ SaltedHash!TDigest makeSaltedHash
 ///ditto
 SaltedHash!TDigest makeSaltedHash
 	(TDigest = DefaultDigest)
-	(TDigest digest, string password, Salt salt = randomSalt())
+	(TDigest digest, Password password, Salt salt = randomSalt())
 	if(isDigest!TDigest)
 {
 	validateStrength!TDigest();
@@ -470,13 +539,13 @@ SaltedHash!TDigest makeSaltedHash
 }
 
 ///ditto
-SaltedHash!Digest makeSaltedHash(Digest digest,	string password, Salt salt = randomSalt())
+SaltedHash!Digest makeSaltedHash(Digest digest,	Password password, Salt salt = randomSalt())
 {
 	validateStrength(digest);
 	return makeSaltedHashImpl(digest, password, salt);
 }
 
-private SaltedHash!TDigest makeSaltedHashImpl(TDigest)(ref TDigest digest, string password, Salt salt)
+private SaltedHash!TDigest makeSaltedHashImpl(TDigest)(ref TDigest digest, Password password, Salt salt)
 	if(isAnyDigest!TDigest)
 {
 	SaltedHash!TDigest ret;
@@ -490,7 +559,7 @@ private SaltedHash!TDigest makeSaltedHashImpl(TDigest)(ref TDigest digest, strin
 	
 	//TODO: This needs to be customizable (also update isPasswordCorrect)
 	ret.digest.put(cast(immutable(ubyte)[])salt);
-	ret.digest.put(cast(immutable(ubyte)[])password);
+	ret.digest.put(password.data);
 
 	ret.hash = ret.digest.finish();
 	
@@ -567,7 +636,7 @@ SaltedHash!Digest parseSaltedHash(string str,
 }
 
 /// Validates a password against an existing salted hash.
-bool isPasswordCorrect(SHash)(string password, SHash sHash)
+bool isPasswordCorrect(SHash)(Password password, SHash sHash)
 	if(isSaltedHash!SHash)
 {
 	auto testHash = makeSaltedHash(sHash.digest, password, sHash.salt);
@@ -576,7 +645,7 @@ bool isPasswordCorrect(SHash)(string password, SHash sHash)
 
 ///ditto
 bool isPasswordCorrect(TDigest = DefaultDigest)
-	(string password, DigestType!TDigest hash, Salt salt)
+	(Password password, DigestType!TDigest hash, Salt salt)
 	if(isDigest!TDigest)
 {
 	TDigest digest;
@@ -585,7 +654,7 @@ bool isPasswordCorrect(TDigest = DefaultDigest)
 }
 
 ///ditto
-bool isPasswordCorrect(string password,
+bool isPasswordCorrect(Password password,
 	ubyte[] hash, Salt salt, Digest digest = new DefaultDigestClass())
 {
 	auto testHash = makeSaltedHash(digest, password, salt);
@@ -597,17 +666,17 @@ unittest
 {
 	// For validity of sanity checks, these sha1 and base64 strings
 	// were NOT generated using Phobos.
-	enum plainText1      = "hello world";
+	auto plainText1      = dupPassword("hello world");
 	enum sha1Hash1       = cast(ubyte[20]) x"2aae6c35c94fcfb415dbe95f408b9ce91ee846ed";
 	enum sha1Hash1Base64 = "Kq5sNclPz7QV2+lfQIuc6R7oRu0=";
 
-	enum plainText2      = "some salt";
+	auto plainText2      = dupPassword("some salt");
 	enum sha1Hash2       = cast(ubyte[20]) x"78bc8b0e186b0aa698f12dc27736b492e4dacfc8";
 	enum sha1Hash2Base64 = "eLyLDhhrCqaY8S3Cdza0kuTaz8g=";
 	
 	unitlog("Sanity checking unittest's data");
-	assert(sha1Of(plainText1) == sha1Hash1);
-	assert(sha1Of(plainText2) == sha1Hash2);
+	assert(sha1Of(plainText1.data) == sha1Hash1);
+	assert(sha1Of(plainText2.data) == sha1Hash2);
 	assert(Base64.encode(sha1Hash1) == sha1Hash1Base64);
 	assert(Base64.encode(sha1Hash2) == sha1Hash2Base64);
 
@@ -648,9 +717,9 @@ unittest
 	assert(isPasswordCorrect!SHA1(plainText1, result2.hash, result2.salt));
 	assert(isPasswordCorrect     (plainText1, result2.hash, result2.salt, new SHA1Digest()));
 
-	assert(!isPasswordCorrect     ("bad pass", result2));
-	assert(!isPasswordCorrect!SHA1("bad pass", result2.hash, result2.salt));
-	assert(!isPasswordCorrect     ("bad pass", result2.hash, result2.salt, new SHA1Digest()));
+	assert(!isPasswordCorrect     (dupPassword("bad pass"), result2));
+	assert(!isPasswordCorrect!SHA1(dupPassword("bad pass"), result2.hash, result2.salt));
+	assert(!isPasswordCorrect     (dupPassword("bad pass"), result2.hash, result2.salt, new SHA1Digest()));
 
 	auto wrongSalt = result2;
 	wrongSalt.salt = wrongSalt.salt[4..$-1];
@@ -683,7 +752,7 @@ to a user is a highly insecure practice and should NEVER be done. However,
 there are other times when generating a password may be reasonable, so this is
 provided as a convenience.
 +/
-string randomPassword(Rand = DefaultCryptoRand) (
+Password randomPassword(Rand = DefaultCryptoRand) (
 	size_t length = defaultPasswordLength,
 	const(ubyte)[] passwordChars = defaultPasswordChars
 )
@@ -700,7 +769,7 @@ body
 }
 
 ///ditto
-string randomPassword(Rand = DefaultCryptoRand) (
+Password randomPassword(Rand = DefaultCryptoRand) (
 	ref Rand rand,
 	size_t length = defaultPasswordLength,
 	const(ubyte)[] passwordChars = defaultPasswordChars
@@ -712,9 +781,9 @@ out(result)
 }
 body
 {
-	Appender!string sink;
+	Appender!(ubyte[]) sink;
 	randomPassword(rand, sink, length, passwordChars);
-	return sink.data;
+	return toPassword(sink.data);
 }
 
 ///ditto
@@ -723,7 +792,7 @@ void randomPassword(Rand = DefaultCryptoRand, Sink)(
 	size_t length = defaultPasswordLength,
 	const(ubyte)[] passwordChars = defaultPasswordChars
 )
-if( isUniformRNG!Rand && isOutputRange!(Sink, const(char)) )
+if( isUniformRNG!Rand && isOutputRange!(Sink, ubyte) )
 {
 	Rand rand;
 	rand.initRand();
@@ -736,7 +805,7 @@ void randomPassword(Rand = DefaultCryptoRand, Sink) (
 	size_t length = defaultPasswordLength,
 	const(ubyte)[] passwordChars = defaultPasswordChars
 )
-if( isUniformRNG!Rand && isOutputRange!(Sink, const(char)) )
+if( isUniformRNG!Rand && isOutputRange!(Sink, ubyte) )
 {
 	enforce(passwordChars.length >= 2);
 	
@@ -754,15 +823,15 @@ unittest
 {
 	unitlog("Testing randomPassword");
 
-	void validateChars(string pass, immutable(ubyte)[] validChars, size_t length)
+	void validateChars(Password pass, immutable(ubyte)[] validChars, size_t length)
 	{
-		foreach(i; 0..pass.length)
+		foreach(i; 0..pass.data.length)
 		{
 			assert(
-				validChars.canFind( cast(ubyte)pass[i] ),
+				validChars.canFind( cast(ubyte)pass.data[i] ),
 				text(
-					"Invalid char `", pass[i],
-					"` (ascii ", cast(ubyte)pass[i], ") at index ", i,
+					"Invalid char `", pass.data[i],
+					"` (ascii ", cast(ubyte)pass.data[i], ") at index ", i,
 					" in password length ", length,
 					". Valid char set: ", validChars
 				)
@@ -779,7 +848,7 @@ unittest
 	
 	// Ensure length, valid chars and non-purity:
 	//     Default RNG, length and charset. Non-sink.
-	string prevPass;
+	Password prevPass;
 	foreach(i; 0..10)
 	{
 		auto pass = randomPassword();
@@ -806,9 +875,9 @@ unittest
 	foreach(length; [defaultPasswordLength, 5, 2])
 	foreach(i; 0..2)
 	{
-		string pass;
+		Password pass;
 		MinstdRand rand;
-		Appender!string sink;
+		Appender!(ubyte[]) sink;
 		
 		// -- Non-sink -------------
 
@@ -837,43 +906,43 @@ unittest
 		// -- With sink -------------
 
 		// Default RNG
-		sink = appender!string();
+		sink = appender!(ubyte[])();
 		randomPassword(sink, length, validChars);
-		pass = sink.data;
+		pass = toPassword(sink.data);
 		assert(pass.length == length);
 		validateChars(pass, validChars, length);
 		if(validChars.length > 25)
 		{
-			sink = appender!string();
+			sink = appender!(ubyte[])();
 			randomPassword(sink, length, validChars);
-			assert(pass != sink.data);
+			assert(pass.data != sink.data);
 		}
 		
 		// Provided RNG type
-		sink = appender!string();
+		sink = appender!(ubyte[])();
 		randomPassword!MinstdRand(sink, length, validChars);
-		pass = sink.data;
+		pass = toPassword(sink.data);
 		assert(pass.length == length);
 		validateChars(pass, validChars, length);
 		if(validChars.length > 25)
 		{
-			sink = appender!string();
+			sink = appender!(ubyte[])();
 			randomPassword!MinstdRand(sink, length, validChars);
-			assert(pass != sink.data);
+			assert(pass.data != sink.data);
 		}
 		
 		// Provided RNG object
-		sink = appender!string();
+		sink = appender!(ubyte[])();
 		rand = MinstdRand(unpredictableSeed);
 		randomPassword(rand, sink, length, validChars);
-		pass = sink.data;
+		pass = toPassword(sink.data);
 		assert(pass.length == length);
 		validateChars(pass, validChars, length);
 		if(validChars.length > 25)
 		{
-			sink = appender!string();
+			sink = appender!(ubyte[])();
 			randomPassword(rand, sink, length, validChars);
-			assert(pass != sink.data);
+			assert(pass.data != sink.data);
 		}
 	}
 }
