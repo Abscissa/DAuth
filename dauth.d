@@ -193,6 +193,7 @@ Digest defaultDigestFromCode(string digestCode)
 }
 
 void defaultSalter(TDigest)(ref TDigest digest, Password password, Salt salt)
+	if(isAnyDigest!TDigest)
 {
 	digest.put(cast(immutable(ubyte)[])salt);
 	digest.put(password.data);
@@ -455,7 +456,6 @@ struct Hash(TDigest) if(isAnyDigest!TDigest)
 	AnyDigestType!TDigest hash;
 	
 	/// The digest that was used for hashing.
-	/// Note, this may get reset and reused.
 	TDigest digest;
 	
 	/// Encodes the digest, salt and hash into a convenient forward-compatible
@@ -540,8 +540,7 @@ Hash!TDigest makeHash(TDigest = DefaultDigest)
 }
 
 ///ditto
-Hash!TDigest makeHash(TDigest = DefaultDigest)
-	(Password password, Salter!TDigest salter)
+Hash!TDigest makeHash(TDigest = DefaultDigest)(Password password, Salter!TDigest salter)
 	if(isDigest!TDigest)
 {
 	validateStrength!TDigest();
