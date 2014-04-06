@@ -15,6 +15,8 @@ Note: DAuth does not directly provide any encryption, hashing, or random number 
 
 Typical Usage
 -------------
+See also: [API Reference](http://semitwist.com/dauth/)
+
 ```d
 import dauth;
 
