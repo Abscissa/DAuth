@@ -140,8 +140,8 @@ version(DAuth_AllowWeakSecurity) {} else
 	version = DisallowWeakSecurity;
 }
 
-// Defaults
 alias Salt = ubyte[];
+alias Salter(TDigest) = void function(ref TDigest, Password, Salt);
 alias DefaultCryptoRand = Mt19937; /// Bad choice, but I'm not sure if Phobos has a crypto-oriented random.
 alias DefaultDigest = SHA1; /// Bad choice, but the best Phobos currently has.
 alias DefaultDigestClass = WrapperDigest!DefaultDigest;
@@ -168,6 +168,12 @@ enum defaultSaltLength = 32;
 /// Must be a multiple of 4. Although, due to usage of base64, using a multiple
 /// of 12 prevents a padding tilde from existing at the end of every token.
 enum defaultTokenStrength = 36;
+
+void defaultSalter(TDigest)(ref TDigest digest, Password password, Salt salt)
+{
+	digest.put(cast(immutable(ubyte)[])salt);
+	digest.put(password.data);
+}
 
 /++
 Note, this only checks Phobos's RNG's and digests, and only by type. This
@@ -517,35 +523,49 @@ Supports both template-style and OO-style digests. See the documentation of
 std.digest.digest for details.
 
 Salt is optional. It will be generated at random if not provided.
+
+Normally, the salt and password are combined as (psuedocode) 'salt~password'.
+There is no cryptographic benefit to combining the salt and password any
+other way. However, if you need to support an alternate method for
+compatibility purposes, you can do so by providing a custom salter function.
+See the implementation of DAuth's defaultSalter to see how to do this.
 +/
-SaltedHash!TDigest makeSaltedHash
-	(TDigest = DefaultDigest)
-	(Password password, Salt salt = randomSalt())
+SaltedHash!TDigest makeSaltedHash(TDigest = DefaultDigest)
+	(Password password, Salt salt = randomSalt(), Salter!TDigest salter = &defaultSalter!TDigest)
 	if(isDigest!TDigest)
 {
 	validateStrength!TDigest();
 	TDigest digest;
-	return makeSaltedHashImpl(digest, password, salt);
+	return makeSaltedHashImpl!TDigest(digest, password, salt, salter);
 }
 
 ///ditto
-SaltedHash!TDigest makeSaltedHash
-	(TDigest = DefaultDigest)
-	(TDigest digest, Password password, Salt salt = randomSalt())
+SaltedHash!TDigest makeSaltedHash(TDigest = DefaultDigest)
+	(Password password, Salter!TDigest salter)
 	if(isDigest!TDigest)
 {
 	validateStrength!TDigest();
-	return makeSaltedHashImpl(digest, password, salt);
+	TDigest digest;
+	return makeSaltedHashImpl(digest, password, randomSalt(), salter);
 }
 
 ///ditto
-SaltedHash!Digest makeSaltedHash(Digest digest,	Password password, Salt salt = randomSalt())
+SaltedHash!Digest makeSaltedHash()(Digest digest, Password password, Salt salt = randomSalt(),
+	Salter!Digest salter = &defaultSalter!Digest)
 {
 	validateStrength(digest);
-	return makeSaltedHashImpl(digest, password, salt);
+	return makeSaltedHashImpl!Digest(digest, password, salt, salter);
 }
 
-private SaltedHash!TDigest makeSaltedHashImpl(TDigest)(ref TDigest digest, Password password, Salt salt)
+///ditto
+SaltedHash!Digest makeSaltedHash()(Digest digest, Password password, Salter!Digest salter)
+{
+	validateStrength(digest);
+	return makeSaltedHashImpl!Digest(digest, password, randomSalt(), salter);
+}
+
+private SaltedHash!TDigest makeSaltedHashImpl(TDigest)
+	(ref TDigest digest, Password password, Salt salt, Salter!TDigest salter)
 	if(isAnyDigest!TDigest)
 {
 	SaltedHash!TDigest ret;
@@ -557,10 +577,7 @@ private SaltedHash!TDigest makeSaltedHashImpl(TDigest)(ref TDigest digest, Passw
 	else
 		ret.digest.reset(); // OO-based digest
 	
-	//TODO: This needs to be customizable (also update isPasswordCorrect)
-	ret.digest.put(cast(immutable(ubyte)[])salt);
-	ret.digest.put(password.data);
-
+	salter(ret.digest, password, salt);
 	ret.hash = ret.digest.finish();
 	
 	return ret;
@@ -636,28 +653,38 @@ SaltedHash!Digest parseSaltedHash(string str,
 }
 
 /// Validates a password against an existing salted hash.
-bool isPasswordCorrect(SHash)(Password password, SHash sHash)
-	if(isSaltedHash!SHash)
+bool isPasswordCorrect(TDigest = DefaultDigest)(Password password, SaltedHash!TDigest sHash,
+	Salter!TDigest salter = &defaultSalter!TDigest)
+	if(isAnyDigest!TDigest)
 {
-	auto testHash = makeSaltedHash(sHash.digest, password, sHash.salt);
+	auto testHash = makeSaltedHash!TDigest(password, sHash.salt, salter);
 	return lengthConstantEquals(testHash.hash, sHash.hash);
 }
 
 ///ditto
 bool isPasswordCorrect(TDigest = DefaultDigest)
-	(Password password, DigestType!TDigest hash, Salt salt)
+	(Password password, DigestType!TDigest hash, Salt salt,
+		Salter!TDigest salter = &defaultSalter!TDigest)
 	if(isDigest!TDigest)
 {
-	TDigest digest;
-	auto testHash = makeSaltedHash(digest, password, salt);
+	auto testHash = makeSaltedHash!TDigest(password, salt, salter);
 	return lengthConstantEquals(testHash.hash, hash);
 }
 
 ///ditto
-bool isPasswordCorrect(Password password,
-	ubyte[] hash, Salt salt, Digest digest = new DefaultDigestClass())
+bool isPasswordCorrect()(Password password,
+	ubyte[] hash, Salt salt, Digest digest = new DefaultDigestClass(),
+	Salter!Digest salter = &defaultSalter!Digest)
 {
-	auto testHash = makeSaltedHash(digest, password, salt);
+	auto testHash = makeSaltedHash(digest, password, salt, salter);
+	return lengthConstantEquals(testHash.hash, hash);
+}
+
+///ditto
+bool isPasswordCorrect()(Password password,
+	ubyte[] hash, Salt salt, Salter!Digest salter)
+{
+	auto testHash = makeSaltedHash(new DefaultDigestClass(), password, salt, salter);
 	return lengthConstantEquals(testHash.hash, hash);
 }
 
@@ -686,17 +713,35 @@ unittest
 	result1.salt = cast(Salt)               sha1Hash2;
 	assert( result1.toString() == text("[SHA1]", sha1Hash2Base64, "$", sha1Hash1Base64) );
 	
-	unitlog("Testing makeSaltedHash([digest,] pass, salt)");
-	auto result2 = makeSaltedHash!SHA1(plainText1, sha1Hash2);
-	auto result3 = makeSaltedHash(new SHA1Digest(), plainText1, cast(Salt)sha1Hash2);
+	unitlog("Testing makeSaltedHash([digest,] pass, salt [, salter])");
+	static void altSalter(TDigest)(ref TDigest digest, Password password, Salt salt)
+	{
+		// Reverse order
+		digest.put(password.data);
+		digest.put(cast(immutable(ubyte)[])salt);
+	}
+	
+	auto result2          = makeSaltedHash!SHA1(plainText1, cast(Salt)sha1Hash2[]);
+	auto result2AltSalter = makeSaltedHash!SHA1(plainText1, cast(Salt)sha1Hash2[], &altSalter!SHA1);
+	auto result3          = makeSaltedHash(new SHA1Digest(), plainText1, cast(Salt)sha1Hash2[]);
+	auto result3AltSalter = makeSaltedHash(new SHA1Digest(), plainText1, cast(Salt)sha1Hash2[], &altSalter!Digest);
 
 	assert(result2.salt       == result3.salt);
 	assert(result2.hash       == result3.hash);
 	assert(result2.toString() == result3.toString());
-	assert(result2.toString() == makeSaltedHash(SHA1(), plainText1, sha1Hash2).toString());
+	assert(result2.toString() == makeSaltedHash!SHA1(plainText1, cast(Salt)sha1Hash2[]).toString());
 
 	assert(result2.salt == result1.salt);
+
+	assert(result2AltSalter.salt       == result3AltSalter.salt);
+	assert(result2AltSalter.hash       == result3AltSalter.hash);
+	assert(result2AltSalter.toString() == result3AltSalter.toString());
+	assert(result2AltSalter.toString() == makeSaltedHash!SHA1(plainText1, cast(Salt)sha1Hash2[], &altSalter!SHA1).toString());
 	
+	assert(result2.salt       == result2AltSalter.salt);
+	assert(result2.hash       != result2AltSalter.hash);
+	assert(result2.toString() != result2AltSalter.toString());
+
 	unitlog("Testing makeSaltedHash(pass)");
 	auto resultRand1 = makeSaltedHash!SHA1(randomPassword());
 	auto resultRand2 = makeSaltedHash!SHA1(randomPassword());
@@ -717,9 +762,17 @@ unittest
 	assert(isPasswordCorrect!SHA1(plainText1, result2.hash, result2.salt));
 	assert(isPasswordCorrect     (plainText1, result2.hash, result2.salt, new SHA1Digest()));
 
+	assert(isPasswordCorrect!SHA1(plainText1, result2AltSalter, &altSalter!SHA1));
+	assert(isPasswordCorrect!SHA1(plainText1, result2AltSalter.hash, result2AltSalter.salt, &altSalter!SHA1));
+	assert(isPasswordCorrect     (plainText1, result2AltSalter.hash, result2AltSalter.salt, new SHA1Digest(), &altSalter!Digest));
+
 	assert(!isPasswordCorrect     (dupPassword("bad pass"), result2));
 	assert(!isPasswordCorrect!SHA1(dupPassword("bad pass"), result2.hash, result2.salt));
 	assert(!isPasswordCorrect     (dupPassword("bad pass"), result2.hash, result2.salt, new SHA1Digest()));
+
+	assert(!isPasswordCorrect!SHA1(dupPassword("bad pass"), result2AltSalter, &altSalter!SHA1));
+	assert(!isPasswordCorrect!SHA1(dupPassword("bad pass"), result2AltSalter.hash, result2AltSalter.salt, &altSalter!SHA1));
+	assert(!isPasswordCorrect     (dupPassword("bad pass"), result2AltSalter.hash, result2AltSalter.salt, new SHA1Digest(), &altSalter!Digest));
 
 	auto wrongSalt = result2;
 	wrongSalt.salt = wrongSalt.salt[4..$-1];
@@ -1102,7 +1155,6 @@ unittest
 /// pseudorandom number generator"
 ///
 /// numBytes must be a multiple of 4, or this will throw an Exception
-//TODO: Get a Cryptographically secure pseudorandom number generator
 ubyte[] randomBytes(Rand = DefaultCryptoRand)(size_t numBytes)
 	if(isUniformRNG!Rand)
 {
