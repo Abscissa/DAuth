@@ -33,23 +33,22 @@ efficiency, when needed, can always be tweaked as necessary.
 
 Typical usage:
 ----------------------------------------
-void setUserPassword(string user, string pass)
+void setPassword(string user, string pass)
 {
-	auto hash = makeHash(pass);
-	string hashString = hash.toString();
-	saveUserInfo(user, hashString);
+	string hashString = makeHash(pass).toString();
+	saveUserPassword(user, hashString);
 }
 
 bool validateUser(string user, string pass)
 {
 	string hashString = loadUserPassword(user);
-	auto hash = parseHash(hashString);
-	return isPasswordCorrect(pass, hash);
+	return isPasswordCorrect(pass, parseHash(hashString));
 }
 ----------------------------------------
 
 The above is typical expected usage. It stores randomly-salted password hashes,
-in a forward-compatible ASCII-safe text format.
+using the default hashing digest, in a forward-compatible ASCII-safe text
+format.
 
 Nearly any aspect of the authentication system can be customized, to ensure
 compatibility with both existing infrastructure and future cryptographic
@@ -60,7 +59,8 @@ developments:
 - Hashes and salts can be stored in any way or format desired. This is because
 the Hash struct returned by makeHash() and parseHash()
 provides easy access to the hash, the salt, and the digest used.
-- The method of combining the salt and raw password can be user-defined.
+- The method of combining the salt and raw password can be user-defined (via
+the optional 'salter' parameter of makeHash() and isPasswordCorrect()).
 - The toString supports OutputRange sinks, to avoid unnecessary allocations.
 - Passwords, salts, and randomized tokens (for one-use URLs) can all be
 automatically generated, optionally driven by custom Phobos-compatible
@@ -71,7 +71,7 @@ This is a more customized usage example:
 import std.digest.md;
 import std.random;
 
-void setUserPassword(string user, string pass)
+void setPassword(string user, string pass)
 {
 	// Note: This randomizer is not actually suitable for crypto purposes.
 	static MinstdRand rand;
