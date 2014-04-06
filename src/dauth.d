@@ -1,5 +1,5 @@
 /++
-DAuth v0.5.0 - Authentication Utility for D
+DAuth v0.5.1 - Authentication Utility for D
 
 Writen in the D programming language.
 Tested with DMD 2.064.2 and 2.065
