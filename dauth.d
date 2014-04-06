@@ -343,10 +343,7 @@ unittest
 /// Tests if the type is an instance of struct Hash(some digest)
 template isHash(T)
 {
-	enum isHash =
-		is( typeof(T.init.digest) ) &&
-		is( Hash!(typeof(T.init.digest)) ) &&
-		is( Hash!(typeof(T.init.digest)) == T );
+	enum isHash = is( Hash!(TemplateArgsOf!(T)[0]) == T );
 }
 
 version(DAuth_Unittest)
@@ -1200,3 +1197,15 @@ bool lengthConstantEquals(ubyte[] a, ubyte[] b)
 
 	return diff == 0;
 }
+
+// Borrowed from Phobos master (Should arrive in DMD v2.066).
+private template TemplateArgsOf(alias T : Base!Args, alias Base, Args...)
+{
+    alias TemplateArgsOf = Args;
+}
+private template TemplateArgsOf(T : Base!Args, alias Base, Args...)
+{
+    alias TemplateArgsOf = Args;
+}
+static assert(is( TemplateArgsOf!( Hash!SHA1   )[0] == SHA1   ));
+static assert(is( TemplateArgsOf!( Hash!Digest )[0] == Digest ));
