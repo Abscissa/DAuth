@@ -15,25 +15,25 @@ Note: DAuth does not directly provide any encryption, hashing, or random number 
 
 Typical Usage
 -------------
-	```d
-	import dauth;
-	
-	// Your code to save/load from a database or other storage:
-	void saveUserPassword(string user, string passhash) {...}
-	string loadUserPassword(string user) {...}
+```d
+import dauth;
 
-	void setPassword(string user, char[] pass)
-	{
-		string hashString = makeHash(toPassword(pass)).toString();
-		saveUserPassword(user, hashString);
-	}
+// Your code to save/load from a database or other storage:
+void saveUserPassword(string user, string passhash) {...}
+string loadUserPassword(string user) {...}
 
-	bool validateUser(string user, char[] pass)
-	{
-		string hashString = loadUserPassword(user);
-		return isPasswordCorrect(toPassword(pass), parseHash(hashString));
-	}
-	```
+void setPassword(string user, char[] pass)
+{
+	string hashString = makeHash(toPassword(pass)).toString();
+	saveUserPassword(user, hashString);
+}
+
+bool validateUser(string user, char[] pass)
+{
+	string hashString = loadUserPassword(user);
+	return isPasswordCorrect(toPassword(pass), parseHash(hashString));
+}
+```
 
 The above code stores randomly-salted password hashes, using the default hashing digest, in a forward-compatible ASCII-safe text format (mostly a form of Base64). The hash digest (ex: "SHA1") is stored as part of the ```hashString```, so if you upgrade to a different hashing digest, any existing accounts using the old digest will automatically remain accessible.
 
@@ -55,39 +55,39 @@ To ensure compatibility with both existing infrastructure and future cryptograph
 
 Here's a somewhat more customized usage example:
 
-	```d
-	import std.digest.md;
-	import std.exception;
-	import std.random;
-	import dauth;
+```d
+import std.digest.md;
+import std.exception;
+import std.random;
+import dauth;
 
-	// Your code to save/load from a database or other storage:
-	void saveUserInfo(string user, string digest, string passhash, ubyte[] salt) {...}
-	string loadUserPassword(string user) {...}
-	ubyte[] loadUserSalt(string user) {...}
-	string loadUserDigest(string user) {...}
+// Your code to save/load from a database or other storage:
+void saveUserInfo(string user, string digest, string passhash, ubyte[] salt) {...}
+string loadUserPassword(string user) {...}
+ubyte[] loadUserSalt(string user) {...}
+string loadUserDigest(string user) {...}
 
-	void setPassword(string user, string pass)
-	{
-		// Note: This randomizer is not actually suitable for crypto purposes.
-		static MinstdRand rand;
-		auto salt = randomSalt(rand, 64);
+void setPassword(string user, string pass)
+{
+	// Note: This randomizer is not actually suitable for crypto purposes.
+	static MinstdRand rand;
+	auto salt = randomSalt(rand, 64);
 
-		// Warning! MD5 should never be used for real passwords.
-		auto myHash = makeHash!MD5(pass, salt);
-		
-		saveUserInfo(user, "MD5", myHash.hash, myHash.salt);
-	}
+	// Warning! MD5 should never be used for real passwords.
+	auto myHash = makeHash!MD5(pass, salt);
+	
+	saveUserInfo(user, "MD5", myHash.hash, myHash.salt);
+}
 
-	bool validateUser(string user, string pass)
-	{
-		string hash = loadUserPassword(user);
-		ubyte[] salt = loadUserSalt(user);
-		ensure(loadUserDigest(user) == "MD5");
-		
-		return isPasswordCorrect!MD5(pass, hash, salt);
-	}
-	```
+bool validateUser(string user, string pass)
+{
+	string hash = loadUserPassword(user);
+	ubyte[] salt = loadUserSalt(user);
+	ensure(loadUserDigest(user) == "MD5");
+	
+	return isPasswordCorrect!MD5(pass, hash, salt);
+}
+```
 
 DAuth's Priorities
 ------------------
