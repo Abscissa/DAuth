@@ -1,4 +1,26 @@
-/// DAuth
+/++
+DAuth:
+Authentication Utility for D
+
+Writen in the D programming language.
+Tested with DMD 2.064.2 and 2.065
+Licensed under The zlib/libpng License
+
+Homepage:
+$(LINK https://github.com/abscissa/DAuth)
+
+This API Reference:
+$(LINK http://semitwist.com/dauth)
+
+Authors: Nick Sabalausky, Jesse Phillips
+
+DMD flags to enable DAuth unittests:
+	-unittest -version=DAuth_AllowWeakSecurity -version=DAuth_Unittest
+
+DMD flags to enable DAuth unittests, but silence all non-error output:
+	-unittest -version=DAuth_AllowWeakSecurity -version=DAuth_Unittest -version=DAuth_Unittest_Quiet
++/
+
 module dauth;
 
 import std.algorithm;
@@ -15,11 +37,6 @@ import std.random;
 import std.range;
 import std.typecons;
 
-/// Enable DAuth unittests:
-///    -unittest -version=DAuth_AllowWeakSecurity -version=DAuth_Unittest
-///
-/// Enable DAuth unittests, but silence all non-error output:
-///    -unittest -version=DAuth_AllowWeakSecurity -version=DAuth_Unittest -version=DAuth_Unittest_Quiet
 version(DAuth_Unittest)
 {
 	version(DAuth_Unittest_Quiet) {} else
@@ -43,12 +60,12 @@ version(DAuth_AllowWeakSecurity) {} else
 	version = DisallowWeakSecurity;
 }
 
-alias Salt = ubyte[];
-alias Salter(TDigest) = void function(ref TDigest, Password, Salt);
+alias Salt = ubyte[]; /// Salt type
+alias Salter(TDigest) = void function(ref TDigest, Password, Salt); /// Convenience alias for salter functions.
 alias DefaultCryptoRand = Mt19937; /// Bad choice, but I'm not sure if Phobos has a crypto-oriented random.
 alias DefaultDigest = SHA1; /// Bad choice, but the best Phobos currently has.
-alias DefaultDigestClass = WrapperDigest!DefaultDigest;
-alias TokenBase64 = Base64Impl!('-', '_', '~');
+alias DefaultDigestClass = WrapperDigest!DefaultDigest; /// OO-style version of 'DefaultDigest'.
+alias TokenBase64 = Base64Impl!('-', '_', '~'); /// Implementation of Base64 engine used for tokens.
 
 /// In characters. Default length of randomly-generated passwords.
 enum defaultPasswordLength = 20;
@@ -72,6 +89,8 @@ enum defaultSaltLength = 32;
 /// of 12 prevents a padding tilde from existing at the end of every token.
 enum defaultTokenStrength = 36;
 
+/// Default implementation of 'digestCodeOfObj'.
+/// See 'Hash!(TDigest).toString' for more info.
 string defaultDigestCodeOfObj(Digest digest)
 {
 	if     (cast( CRC32Digest     )digest) return "CRC32";
@@ -82,6 +101,8 @@ string defaultDigestCodeOfObj(Digest digest)
 		throw new UnknownDigestException("Unknown digest type");
 }
 
+/// Default implementation of 'digestCodeOfObj'.
+/// See 'parseHash' for more info.
 Digest defaultDigestFromCode(string digestCode)
 {
 	switch(digestCode)
@@ -95,6 +116,7 @@ Digest defaultDigestFromCode(string digestCode)
 	}
 }
 
+/// Default salter for 'makeHash' and 'isPasswordCorrect'.
 void defaultSalter(TDigest)(ref TDigest digest, Password password, Salt salt)
 	if(isAnyDigest!TDigest)
 {
@@ -183,11 +205,15 @@ private void validateStrength(Digest digest)
 	}
 }
 
+/// Thrown when the provided (or default) 'digestCodeOfObj' or 'digestFromCode'
+/// functions fail to find a match.
 class UnknownDigestException : Exception
 {
 	this(string msg) { super(msg); }
 }
 
+/// Thrown when a known-weak algortihm or setting it attempted, UNLESS
+/// compiled with '-version=DAuth_AllowWeakSecurity'
 class KnownWeakException : Exception
 {
 	static enum message =
@@ -295,6 +321,14 @@ string getDigestCode(TDigest)(string function(Digest) digestCodeOfObj, TDigest d
 /// a new password is assigned.
 ///
 /// If you keep any direct references to Password.data, be aware it may get cleared.
+///
+/// The payload is a private struct that supports the following:
+/// 
+/// @property ubyte[] data(): Retrive the actual plaintext password
+/// @property size_t length() const: Retrive the password length
+/// void opAssign(PasswordData rhs): Assignment
+/// void opAssign(ubyte[] rhs): Assignment
+/// ~this(): Destructor
 alias Password = RefCounted!PasswordData;
 
 /// Payload of Password
@@ -334,18 +368,24 @@ private struct PasswordData
 	}
 }
 
+/// Constructs a Password from a ubyte[].
+/// Mainly provided for syntactic consistency with 'toPassword(char[])'.
 Password toPassword(ubyte[] password)
 {
 	return Password(password);
 }
 
+/// Constructs a Password from a char[] so you don't have to cast to ubyte[],
+/// and don't accidentally cast away immutability.
 Password toPassword(char[] password)
 {
 	return Password(cast(ubyte[])password);
 }
 
 /// This function exists as a convenience in case you need it, HOWEVER it's
-/// recommended to design your code so you DON'T need to use this:
+/// recommended to design your code so you DON'T need to use this (use
+/// toPassword instead):
+///
 /// Using this to create a Password cannot protect the in-memory data of your
 /// original string because a string's data is immutable (this function must
 /// .dup the memory).
@@ -362,7 +402,7 @@ Password dupPassword(string password)
 /// Note the digest type can be obtained via DigestOf!(SomeHashType).
 struct Hash(TDigest) if(isAnyDigest!TDigest)
 {
-	Salt salt;       /// The salt that was used.
+	Salt salt; /// The salt that was used.
 	
 	/// The hash of the salted password. To obtain a printable DB-friendly
 	/// string, pass this to std.digest.digest.toHexString.
