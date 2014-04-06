@@ -1,0 +1,2 @@
+#!/bin/sh
+dmd -c -o- -Dddocs src/dauth.d
