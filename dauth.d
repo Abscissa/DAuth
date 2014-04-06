@@ -362,6 +362,19 @@ unittest
 	static assert( !isHash!(Bar!SHA1Digest) );
 }
 
+/// Retreive the digest type of a struct Hash(some digest)
+template DigestOf(T) if(isHash!T)
+{
+	alias DigestOf = TemplateArgsOf!(T)[0];
+}
+
+version(DAuth_Unittest)
+unittest
+{
+	static assert(is( DigestOf!(Hash!SHA1  ) == SHA1  ));
+	static assert(is( DigestOf!(Hash!Digest) == Digest));
+}
+
 string getDigestCode(TDigest)(string function(Digest) digestCodeOfObj, TDigest digest)
 	if(isAnyDigest!TDigest)
 {
@@ -443,7 +456,7 @@ Password dupPassword(string password)
 }
 
 /// Contains all the relevent information for a salted hash.
-/// Note that the digest type can be obtained via typeof(myHash.digest).
+/// Note the digest type can be obtained via DigestOf!(SomeHashType).
 struct Hash(TDigest) if(isAnyDigest!TDigest)
 {
 	Salt salt;       /// The salt that was used.
