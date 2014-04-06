@@ -315,19 +315,25 @@ string getDigestCode(TDigest)(string function(Digest) digestCodeOfObj, TDigest d
 	}
 }
 
-/// A reference-counted type for passwords. The memory containing the password
-/// is automatically zeroed-out when there are no more references or when
-/// a new password is assigned.
-///
-/// If you keep any direct references to Password.data, be aware it may get cleared.
-///
-/// The payload is a private struct that supports the following:
-/// 
-/// @property ubyte[] data(): Retrive the actual plaintext password
-/// @property size_t length() const: Retrive the password length
-/// void opAssign(PasswordData rhs): Assignment
-/// void opAssign(ubyte[] rhs): Assignment
-/// ~this(): Destructor
+/++
+A reference-counted type for passwords. The memory containing the password
+is automatically zeroed-out when there are no more references or when
+a new password is assigned.
+
+If you keep any direct references to Password.data, be aware it may get cleared.
+
+The payload is a private struct that supports the following:
+
+	@property ubyte[] data(): Retrieve the actual plaintext password
+
+	@property size_t length() const: Retrieve the password length
+
+	void opAssign(PasswordData rhs): Assignment
+
+	void opAssign(ubyte[] rhs): Assignment
+
+	~this(): Destructor
++/
 alias Password = RefCounted!PasswordData;
 
 /// Payload of Password
@@ -397,7 +403,7 @@ Password dupPassword(string password)
 	return toPassword(password.dup);
 }
 
-/// Contains all the relevent information for a salted hash.
+/// Contains all the relevant information for a salted hash.
 /// Note the digest type can be obtained via DigestOf!(SomeHashType).
 struct Hash(TDigest) if(isAnyDigest!TDigest)
 {

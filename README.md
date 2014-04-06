@@ -1,17 +1,17 @@
 DAuth - Authentication Utility for D
 ====================================
 
-DAuth is a low-level authentication library for [D](http://dlang.org) with no external dependencies other than the standard library. It accepts any Phobos-compatible [digest](http://dlang.org/phobos/std_digest_digest.html) or [random number generator](http://dlang.org/phobos/std_random.html) algorithm and provides an simple, yet flexible, API to help you easily incorporate secure, upgradable user authentication based on [salted password hashes]() into your software. You can have as much, or as little, control as you need.
+DAuth is a low-level authentication library for [D](http://dlang.org) with no external dependencies other than the standard library. It accepts any Phobos-compatible [digest](http://dlang.org/phobos/std_digest_digest.html) or [random number generator](http://dlang.org/phobos/std_random.html) algorithm and provides an simple, yet flexible, API to help you easily incorporate secure, upgradable user authentication based on [salted password hashes](http://en.wikipedia.org/wiki/Salt_%28cryptography%29) into your software. You can have as much, or as little, control as you need.
 
 DAuth's main interface is:
 
-- ```makeHash(Password)```: Generates a salted hash for a password. The salt, hashing ("digest") algorithm, and salt/password combing ("salter") algorithm can optionally be provided, or left as default. By default, the salt is automatically generated at random.
+- ```makeHash(Password)```: Generates a salted hash for a password. The salt, the hashing ("digest") algorithm, and the salt/password combing ("salter") algorithm can optionally be provided, or left as default. By default, the salt is automatically generated at random.
 
 - ```isPasswordCorrect(Password, Hash)```: Validates a password against an existing salted hash. As with ```makeHash```, everything is optionally customizable. The hashes are compared using a ["length-constant" time](https://crackstation.net/hashing-security.htm) algorithm to thwart timing-based attacks.
 
-The library also provides a forward-compatible string-based hash format for easy storage and retreival. Additionally, there are functions for randomly generating salts, passwords and single-use tokens.
+The library also provides a forward-compatible string-based hash format for easy storage and retrieval. Additionally, there are functions for randomly generating salts, passwords and single-use tokens.
 
-Note: DAuth does not directly provide any cryptographic, hashing, or random number generating algorithms. It leaves this up to other libraries, relying on the [Phobos](http://dlang.org/phobos/index.html)-defined protocols for [digests](http://dlang.org/phobos/std_digest_digest.html) and [random number generators](http://dlang.org/phobos/std_random.html). Phobos includes some such algotihma already. Although bear in mind that, as of DMD v2.065, it lacks any algorithms that are currently considered cryptographically-secure for salted password hashing (but it does include SHA1, which is nonetheless still widely used for password hashing).
+Note: DAuth does not directly provide any encryption, hashing, or random number generating algorithms. It leaves this up to other libraries, relying on the [Phobos](http://dlang.org/phobos/index.html)-defined protocols for [digests](http://dlang.org/phobos/std_digest_digest.html) and [random number generators](http://dlang.org/phobos/std_random.html). Phobos includes some such algorithms already. Although bear in mind that, as of DMD v2.065, it lacks any algorithms that are currently considered cryptographically-secure for salted password hashing (but it does include SHA1, which is nonetheless still widely used for password hashing).
 
 Typical Usage
 -------------
@@ -41,7 +41,7 @@ The passwords are mutable strings for a reason: DAuth stores passwords in a type
 
 To ensure compatibility with both existing infrastructure and future cryptographic developments, nearly any aspect of the authentication system can be customized:
 
-- Passwords can be hashed using any Phobos-compatibe digest (See [std.digest.digest](http://dlang.org/phobos/std_digest_digest.html)).
+- Passwords can be hashed using any Phobos-compatible digest (See [std.digest.digest](http://dlang.org/phobos/std_digest_digest.html)).
 
 - Salts can be provided manually, or have a user-defined length.
 
