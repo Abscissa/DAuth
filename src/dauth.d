@@ -1,6 +1,5 @@
 /++
-DAuth:
-Authentication Utility for D
+DAuth v0.5.0 - Authentication Utility for D
 
 Writen in the D programming language.
 Tested with DMD 2.064.2 and 2.065
@@ -12,7 +11,7 @@ $(LINK https://github.com/abscissa/DAuth)
 This API Reference:
 $(LINK http://semitwist.com/dauth)
 
-Authors: Nick Sabalausky, Jesse Phillips
+Author: Nick Sabalausky
 
 DMD flags to enable DAuth unittests:
 	-unittest -version=DAuth_AllowWeakSecurity -version=DAuth_Unittest
@@ -139,16 +138,16 @@ attacks.
 
 For random number generators, you should use a CPRNG (cryptographically secure
 pseudorandom number generator):
-    http://en.wikipedia.org/wiki/Cryptographically_secure_pseudo-random_number_generator
+    $(LINK http://en.wikipedia.org/wiki/Cryptographically_secure_pseudo-random_number_generator )
 
 For digests, you should use an established "key stretching" algorithm
-( http://en.wikipedia.org/wiki/Key_stretching#History ), intended
+( $(LINK http://en.wikipedia.org/wiki/Key_stretching#History) ), intended
 for password hashing. These contain deliberate inefficiencies that cannot be
 optimized away even with massive parallelization (such as a GPU cluster). These
 are NOT too inefficient to use for even high-traffic authentication, but they
 do thwart the parallelized brute force attacks that algorithms used for
 streaming data encryption, such as SHA1, are increasingly susceptible to.
-    https://crackstation.net/hashing-security.htm
+    $(LINK https://crackstation.net/hashing-security.htm)
 +/
 bool isKnownWeak(T)() if(isDigest!T || isUniformRNG!T)
 {
@@ -1143,7 +1142,7 @@ amount of time.
 
 See the section "Why does the hashing code on this page compare the hashes in
 "length-constant" time?" at:
-    https://crackstation.net/hashing-security.htm
+    $(LINK https://crackstation.net/hashing-security.htm)
 +/
 bool lengthConstantEquals(ubyte[] a, ubyte[] b)
 {
