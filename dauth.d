@@ -169,6 +169,29 @@ enum defaultSaltLength = 32;
 /// of 12 prevents a padding tilde from existing at the end of every token.
 enum defaultTokenStrength = 36;
 
+string defaultDigestCodeOfObj(Digest digest)
+{
+	if     (cast( CRC32Digest     )digest) return "CRC32";
+	else if(cast( MD5Digest       )digest) return "MD5";
+	else if(cast( RIPEMD160Digest )digest) return "RIPEMD160";
+	else if(cast( SHA1Digest      )digest) return "SHA1";
+	else
+		throw new UnknownDigestException("Unknown digest type");
+}
+
+Digest defaultDigestFromCode(string digestCode)
+{
+	switch(digestCode)
+	{
+	case "CRC32":     return new CRC32Digest();
+	case "MD5":       return new MD5Digest();
+	case "RIPEMD160": return new RIPEMD160Digest();
+	case "SHA1":      return new SHA1Digest();
+	default:
+		throw new UnknownDigestException("Unknown digest code");
+	}
+}
+
 void defaultSalter(TDigest)(ref TDigest digest, Password password, Salt salt)
 {
 	digest.put(cast(immutable(ubyte)[])salt);
@@ -350,29 +373,6 @@ string getDigestCode(TDigest)(string function(Digest) digestCodeOfObj, TDigest d
 	{
 		auto digestObj = new WrapperDigest!TDigest();
 		return digestCodeOfObj(digestObj);
-	}
-}
-
-string defaultDigestCodeOfObj(Digest digest)
-{
-	if     (cast( CRC32Digest     )digest) return "CRC32";
-	else if(cast( MD5Digest       )digest) return "MD5";
-	else if(cast( RIPEMD160Digest )digest) return "RIPEMD160";
-	else if(cast( SHA1Digest      )digest) return "SHA1";
-	else
-		throw new UnknownDigestException("Unknown digest type");
-}
-
-Digest defaultDigestFromCode(string digestCode)
-{
-	switch(digestCode)
-	{
-	case "CRC32":     return new CRC32Digest();
-	case "MD5":       return new MD5Digest();
-	case "RIPEMD160": return new RIPEMD160Digest();
-	case "SHA1":      return new SHA1Digest();
-	default:
-		throw new UnknownDigestException("Unknown digest code");
 	}
 }
 
