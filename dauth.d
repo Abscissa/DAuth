@@ -35,16 +35,16 @@ Typical usage:
 ----------------------------------------
 void setUserPassword(string user, string pass)
 {
-	auto saltedHash = makeSaltedHash(pass);
-	string hashString = saltedHash.toString();
+	auto hash = makeHash(pass);
+	string hashString = hash.toString();
 	saveUserInfo(user, hashString);
 }
 
 bool validateUser(string user, string pass)
 {
 	string hashString = loadUserPassword(user);
-	auto saltedHash = parseSaltedHash(hashString);
-	return isPasswordCorrect(pass, saltedHash);
+	auto hash = parseHash(hashString);
+	return isPasswordCorrect(pass, hash);
 }
 ----------------------------------------
 
@@ -58,7 +58,7 @@ developments:
 - Passwords can be hashed using any Phobos-compatibe digest (See std.digest.digest).
 - Salts can be provided manually, or have a user-defined length.
 - Hashes and salts can be stored in any way or format desired. This is because
-the SaltedHash struct returned by makeSaltedHash() and parseSaltedHash()
+the Hash struct returned by makeHash() and parseHash()
 provides easy access to the hash, the salt, and the digest used.
 - The method of combining the salt and raw password can be user-defined.
 - The toString supports OutputRange sinks, to avoid unnecessary allocations.
@@ -78,9 +78,9 @@ void setUserPassword(string user, string pass)
 	auto salt = randomSalt(rand, 64);
 
 	// Note: MD5 should never be used for real passwords.
-	auto mySaltedHash = makeSaltedHash!MD5(pass, salt);
+	auto myHash = makeHash!MD5(pass, salt);
 	
-	saveUserInfo(user, mySaltedHash.hash, mySaltedHash.salt);
+	saveUserInfo(user, myHash.hash, myHash.salt);
 }
 
 bool validateUser(string user, string pass)
@@ -224,7 +224,7 @@ do thwart the parallelized brute force attacks that algorithms used for
 streaming data encryption, such as SHA1, are increasingly susceptible to.
     https://crackstation.net/hashing-security.htm
 +/
-bool isKnownInsecure(T)() if(isDigest!T || isUniformRNG!T)
+bool isKnownWeak(T)() if(isDigest!T || isUniformRNG!T)
 {
 	return
 		is(T == CRC32) ||
@@ -249,7 +249,7 @@ bool isKnownInsecure(T)() if(isDigest!T || isUniformRNG!T)
 }
 
 ///ditto
-bool isKnownInsecure(T)(T digest) if(is(T : Digest))
+bool isKnownWeak(T)(T digest) if(is(T : Digest))
 {
 	return
 		cast(CRC32Digest)digest ||
@@ -262,9 +262,9 @@ private void validateStrength(T)() if(isDigest!T || isUniformRNG!T)
 {
 	version(DisallowWeakSecurity)
 	{
-		static if(isKnownInsecure!T())
+		static if(isKnownWeak!T())
 		{
-			pragma(msg, "ERROR: "~T.stringof~" - "~KnownInsecureException.message);
+			pragma(msg, "ERROR: "~T.stringof~" - "~KnownWeakException.message);
 			static assert(false);
 		}
 	}
@@ -274,8 +274,8 @@ private void validateStrength(Digest digest)
 {
 	version(DisallowWeakSecurity)
 	{
-		enforce(!isKnownInsecure(digest),
-			new KnownInsecureException(defaultDigestCodeOfObj(digest)));
+		enforce(!isKnownWeak(digest),
+			new KnownWeakException(defaultDigestCodeOfObj(digest)));
 	}
 }
 
@@ -284,7 +284,7 @@ class UnknownDigestException : Exception
 	this(string msg) { super(msg); }
 }
 
-class KnownInsecureException : Exception
+class KnownWeakException : Exception
 {
 	static enum message =
 		"This is known to be weak for salted password hashing. "~
@@ -339,13 +339,13 @@ unittest
 	static assert( !is(AnyDigestType!Object) );
 }
 
-/// Tests if the type is an instance of struct SaltedHash(some digest)
-template isSaltedHash(T)
+/// Tests if the type is an instance of struct Hash(some digest)
+template isHash(T)
 {
-	enum isSaltedHash =
+	enum isHash =
 		is( typeof(T.init.digest) ) &&
-		is( SaltedHash!(typeof(T.init.digest)) ) &&
-		is( SaltedHash!(typeof(T.init.digest)) == T );
+		is( Hash!(typeof(T.init.digest)) ) &&
+		is( Hash!(typeof(T.init.digest)) == T );
 }
 
 version(DAuth_Unittest)
@@ -354,14 +354,14 @@ unittest
 	struct Foo {}
 	struct Bar(T) { T digest; }
 
-	static assert( isSaltedHash!(SaltedHash!SHA1) );
-	static assert( isSaltedHash!(SaltedHash!SHA1Digest) );
+	static assert( isHash!(Hash!SHA1) );
+	static assert( isHash!(Hash!SHA1Digest) );
 
-	static assert( !isSaltedHash!Foo              );
-	static assert( !isSaltedHash!(Bar!int)        );
-	static assert( !isSaltedHash!(Bar!Object)     );
-	static assert( !isSaltedHash!(Bar!SHA1)       );
-	static assert( !isSaltedHash!(Bar!SHA1Digest) );
+	static assert( !isHash!Foo              );
+	static assert( !isHash!(Bar!int)        );
+	static assert( !isHash!(Bar!Object)     );
+	static assert( !isHash!(Bar!SHA1)       );
+	static assert( !isHash!(Bar!SHA1Digest) );
 }
 
 string getDigestCode(TDigest)(string function(Digest) digestCodeOfObj, TDigest digest)
@@ -445,8 +445,8 @@ Password dupPassword(string password)
 }
 
 /// Contains all the relevent information for a salted hash.
-/// Note that the digest type can be obtained via typeof(mySaltedHash.digest).
-struct SaltedHash(TDigest) if(isAnyDigest!TDigest)
+/// Note that the digest type can be obtained via typeof(myHash.digest).
+struct Hash(TDigest) if(isAnyDigest!TDigest)
 {
 	Salt salt;       /// The salt that was used.
 	
@@ -486,7 +486,7 @@ struct SaltedHash(TDigest) if(isAnyDigest!TDigest)
 	///         return defaultDigestCodeOfObj(digest);
 	/// }
 	/// 
-	/// void doStuff(SaltedHash!BBQ42 hash)
+	/// void doStuff(Hash!BBQ42 hash)
 	/// {
 	///     writeln( hash.toString(&customDigestCodeOfObj) );
 	/// }
@@ -530,45 +530,45 @@ other way. However, if you need to support an alternate method for
 compatibility purposes, you can do so by providing a custom salter function.
 See the implementation of DAuth's defaultSalter to see how to do this.
 +/
-SaltedHash!TDigest makeSaltedHash(TDigest = DefaultDigest)
+Hash!TDigest makeHash(TDigest = DefaultDigest)
 	(Password password, Salt salt = randomSalt(), Salter!TDigest salter = &defaultSalter!TDigest)
 	if(isDigest!TDigest)
 {
 	validateStrength!TDigest();
 	TDigest digest;
-	return makeSaltedHashImpl!TDigest(digest, password, salt, salter);
+	return makeHashImpl!TDigest(digest, password, salt, salter);
 }
 
 ///ditto
-SaltedHash!TDigest makeSaltedHash(TDigest = DefaultDigest)
+Hash!TDigest makeHash(TDigest = DefaultDigest)
 	(Password password, Salter!TDigest salter)
 	if(isDigest!TDigest)
 {
 	validateStrength!TDigest();
 	TDigest digest;
-	return makeSaltedHashImpl(digest, password, randomSalt(), salter);
+	return makeHashImpl(digest, password, randomSalt(), salter);
 }
 
 ///ditto
-SaltedHash!Digest makeSaltedHash()(Digest digest, Password password, Salt salt = randomSalt(),
+Hash!Digest makeHash()(Digest digest, Password password, Salt salt = randomSalt(),
 	Salter!Digest salter = &defaultSalter!Digest)
 {
 	validateStrength(digest);
-	return makeSaltedHashImpl!Digest(digest, password, salt, salter);
+	return makeHashImpl!Digest(digest, password, salt, salter);
 }
 
 ///ditto
-SaltedHash!Digest makeSaltedHash()(Digest digest, Password password, Salter!Digest salter)
+Hash!Digest makeHash()(Digest digest, Password password, Salter!Digest salter)
 {
 	validateStrength(digest);
-	return makeSaltedHashImpl!Digest(digest, password, randomSalt(), salter);
+	return makeHashImpl!Digest(digest, password, randomSalt(), salter);
 }
 
-private SaltedHash!TDigest makeSaltedHashImpl(TDigest)
+private Hash!TDigest makeHashImpl(TDigest)
 	(ref TDigest digest, Password password, Salt salt, Salter!TDigest salter)
 	if(isAnyDigest!TDigest)
 {
-	SaltedHash!TDigest ret;
+	Hash!TDigest ret;
 	ret.digest = digest;
 	ret.salt   = salt;
 	
@@ -583,7 +583,7 @@ private SaltedHash!TDigest makeSaltedHashImpl(TDigest)
 	return ret;
 }
 
-/// Parses a string that was encoded by SaltedHash.toString.
+/// Parses a string that was encoded by Hash.toString.
 ///
 /// Only OO-style digests are used since the digest is specified in the string
 /// and therefore only known at runtime.
@@ -617,10 +617,10 @@ private SaltedHash!TDigest makeSaltedHashImpl(TDigest)
 /// 
 /// void doStuff(string hashString)
 /// {
-///     auto saltedHash = parseSaltedHash(hashString, &customDigestFromCode);
+///     auto hash = parseHash(hashString, &customDigestFromCode);
 /// }
 /// -------------------
-SaltedHash!Digest parseSaltedHash(string str,
+Hash!Digest parseHash(string str,
 	Digest function(string) digestFromCode = &defaultDigestFromCode)
 {
 	// No need to mess with UTF
@@ -643,8 +643,8 @@ SaltedHash!Digest parseSaltedHash(string str,
 	auto salt = splitDollar[0];
 	auto hash = splitDollar[2];
 	
-	// Construct SaltedHash
-	SaltedHash!Digest result;
+	// Construct Hash
+	Hash!Digest result;
 	result.salt   = Base64.decode(salt);
 	result.hash   = Base64.decode(hash);
 	result.digest = digestFromCode(cast(string)digestCode);
@@ -653,11 +653,11 @@ SaltedHash!Digest parseSaltedHash(string str,
 }
 
 /// Validates a password against an existing salted hash.
-bool isPasswordCorrect(TDigest = DefaultDigest)(Password password, SaltedHash!TDigest sHash,
+bool isPasswordCorrect(TDigest = DefaultDigest)(Password password, Hash!TDigest sHash,
 	Salter!TDigest salter = &defaultSalter!TDigest)
 	if(isAnyDigest!TDigest)
 {
-	auto testHash = makeSaltedHash!TDigest(password, sHash.salt, salter);
+	auto testHash = makeHash!TDigest(password, sHash.salt, salter);
 	return lengthConstantEquals(testHash.hash, sHash.hash);
 }
 
@@ -667,7 +667,7 @@ bool isPasswordCorrect(TDigest = DefaultDigest)
 		Salter!TDigest salter = &defaultSalter!TDigest)
 	if(isDigest!TDigest)
 {
-	auto testHash = makeSaltedHash!TDigest(password, salt, salter);
+	auto testHash = makeHash!TDigest(password, salt, salter);
 	return lengthConstantEquals(testHash.hash, hash);
 }
 
@@ -676,7 +676,7 @@ bool isPasswordCorrect()(Password password,
 	ubyte[] hash, Salt salt, Digest digest = new DefaultDigestClass(),
 	Salter!Digest salter = &defaultSalter!Digest)
 {
-	auto testHash = makeSaltedHash(digest, password, salt, salter);
+	auto testHash = makeHash(digest, password, salt, salter);
 	return lengthConstantEquals(testHash.hash, hash);
 }
 
@@ -684,7 +684,7 @@ bool isPasswordCorrect()(Password password,
 bool isPasswordCorrect()(Password password,
 	ubyte[] hash, Salt salt, Salter!Digest salter)
 {
-	auto testHash = makeSaltedHash(new DefaultDigestClass(), password, salt, salter);
+	auto testHash = makeHash(new DefaultDigestClass(), password, salt, salter);
 	return lengthConstantEquals(testHash.hash, hash);
 }
 
@@ -707,13 +707,13 @@ unittest
 	assert(Base64.encode(sha1Hash1) == sha1Hash1Base64);
 	assert(Base64.encode(sha1Hash2) == sha1Hash2Base64);
 
-	unitlog("Testing SaltedHash.toString");
-	SaltedHash!SHA1 result1;
+	unitlog("Testing Hash.toString");
+	Hash!SHA1 result1;
 	result1.hash = cast(AnyDigestType!SHA1) sha1Hash1;
 	result1.salt = cast(Salt)               sha1Hash2;
 	assert( result1.toString() == text("[SHA1]", sha1Hash2Base64, "$", sha1Hash1Base64) );
 	
-	unitlog("Testing makeSaltedHash([digest,] pass, salt [, salter])");
+	unitlog("Testing makeHash([digest,] pass, salt [, salter])");
 	static void altSalter(TDigest)(ref TDigest digest, Password password, Salt salt)
 	{
 		// Reverse order
@@ -721,38 +721,38 @@ unittest
 		digest.put(cast(immutable(ubyte)[])salt);
 	}
 	
-	auto result2          = makeSaltedHash!SHA1(plainText1, cast(Salt)sha1Hash2[]);
-	auto result2AltSalter = makeSaltedHash!SHA1(plainText1, cast(Salt)sha1Hash2[], &altSalter!SHA1);
-	auto result3          = makeSaltedHash(new SHA1Digest(), plainText1, cast(Salt)sha1Hash2[]);
-	auto result3AltSalter = makeSaltedHash(new SHA1Digest(), plainText1, cast(Salt)sha1Hash2[], &altSalter!Digest);
+	auto result2          = makeHash!SHA1(plainText1, cast(Salt)sha1Hash2[]);
+	auto result2AltSalter = makeHash!SHA1(plainText1, cast(Salt)sha1Hash2[], &altSalter!SHA1);
+	auto result3          = makeHash(new SHA1Digest(), plainText1, cast(Salt)sha1Hash2[]);
+	auto result3AltSalter = makeHash(new SHA1Digest(), plainText1, cast(Salt)sha1Hash2[], &altSalter!Digest);
 
 	assert(result2.salt       == result3.salt);
 	assert(result2.hash       == result3.hash);
 	assert(result2.toString() == result3.toString());
-	assert(result2.toString() == makeSaltedHash!SHA1(plainText1, cast(Salt)sha1Hash2[]).toString());
+	assert(result2.toString() == makeHash!SHA1(plainText1, cast(Salt)sha1Hash2[]).toString());
 
 	assert(result2.salt == result1.salt);
 
 	assert(result2AltSalter.salt       == result3AltSalter.salt);
 	assert(result2AltSalter.hash       == result3AltSalter.hash);
 	assert(result2AltSalter.toString() == result3AltSalter.toString());
-	assert(result2AltSalter.toString() == makeSaltedHash!SHA1(plainText1, cast(Salt)sha1Hash2[], &altSalter!SHA1).toString());
+	assert(result2AltSalter.toString() == makeHash!SHA1(plainText1, cast(Salt)sha1Hash2[], &altSalter!SHA1).toString());
 	
 	assert(result2.salt       == result2AltSalter.salt);
 	assert(result2.hash       != result2AltSalter.hash);
 	assert(result2.toString() != result2AltSalter.toString());
 
-	unitlog("Testing makeSaltedHash(pass)");
-	auto resultRand1 = makeSaltedHash!SHA1(randomPassword());
-	auto resultRand2 = makeSaltedHash!SHA1(randomPassword());
+	unitlog("Testing makeHash(pass)");
+	auto resultRand1 = makeHash!SHA1(randomPassword());
+	auto resultRand2 = makeHash!SHA1(randomPassword());
 
 	assert(resultRand1.salt != result1.salt);
 
 	assert(resultRand1.salt != resultRand2.salt);
 	assert(resultRand1.hash != resultRand2.hash);
 
-	unitlog("Testing parseSaltedHash(void)");
-	auto result2Parsed = parseSaltedHash( result2.toString() );
+	unitlog("Testing parseHash(void)");
+	auto result2Parsed = parseHash( result2.toString() );
 	assert(result2.salt       == result2Parsed.salt);
 	assert(result2.hash       == result2Parsed.hash);
 	assert(result2.toString() == result2Parsed.toString());
@@ -781,7 +781,7 @@ unittest
 	assert(!isPasswordCorrect!SHA1(plainText1, wrongSalt.hash, wrongSalt.salt));
 	assert(!isPasswordCorrect     (plainText1, wrongSalt.hash, wrongSalt.salt, new SHA1Digest()));
 
-	SaltedHash!MD5 wrongDigest;
+	Hash!MD5 wrongDigest;
 	wrongDigest.salt = result2.salt;
 	wrongDigest.hash = cast(ubyte[16])result2.hash[0..16];
 	
