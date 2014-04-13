@@ -32,6 +32,7 @@ import std.digest.md;
 import std.digest.ripemd;
 import std.digest.sha;
 import std.exception;
+import std.functional;
 import std.random;
 import std.range;
 import std.typecons;
@@ -60,7 +61,7 @@ version(DAuth_AllowWeakSecurity) {} else
 }
 
 alias Salt = ubyte[]; /// Salt type
-alias Salter(TDigest) = void function(ref TDigest, Password, Salt); /// Convenience alias for salter functions.
+alias Salter(TDigest) = void delegate(ref TDigest, Password, Salt); /// Convenience alias for salter delegates.
 alias DefaultCryptoRand = Mt19937; /// Bad choice, but I'm not sure if Phobos has a crypto-oriented random.
 alias DefaultDigest = SHA1; /// Bad choice, but the best Phobos currently has.
 alias DefaultDigestClass = WrapperDigest!DefaultDigest; /// OO-style version of 'DefaultDigest'.
@@ -205,7 +206,7 @@ private void validateStrength(Digest digest)
 }
 
 /// Thrown when the provided (or default) 'digestCodeOfObj' or 'digestFromCode'
-/// functions fail to find a match.
+/// delegates fail to find a match.
 class UnknownDigestException : Exception
 {
 	this(string msg) { super(msg); }
@@ -303,7 +304,7 @@ unittest
 	static assert(is( DigestOf!(Hash!Digest) == Digest));
 }
 
-string getDigestCode(TDigest)(string function(Digest) digestCodeOfObj, TDigest digest)
+string getDigestCode(TDigest)(string delegate(Digest) digestCodeOfObj, TDigest digest)
 	if(isAnyDigest!TDigest)
 {
 	static if(is(TDigest : Digest))
@@ -420,7 +421,7 @@ struct Hash(TDigest) if(isAnyDigest!TDigest)
 	/// string format, ready for insertion into a database.
 	///
 	/// To support additional digests besides the built-in (Phobos's CRC32, MD5,
-	/// RIPEMD160 and SHA1), supply a custom function for digestCodeOfObj.
+	/// RIPEMD160 and SHA1), supply a custom delegate for digestCodeOfObj.
 	/// Your custom digestCodeOfObj only needs to handle OO-style digests.
 	/// As long as the OO-style digests were created using Phobos's
 	/// WrapperDigest template, the template-style version will be handled
@@ -449,7 +450,7 @@ struct Hash(TDigest) if(isAnyDigest!TDigest)
 	///     writeln( hash.toString(&customDigestCodeOfObj) );
 	/// }
 	/// -------------------
-	string toString(string function(Digest) digestCodeOfObj = &defaultDigestCodeOfObj)
+	string toString(string delegate(Digest) digestCodeOfObj = toDelegate(&defaultDigestCodeOfObj))
 	{
 		Appender!string sink;
 		toString(sink, digestCodeOfObj);
@@ -457,7 +458,8 @@ struct Hash(TDigest) if(isAnyDigest!TDigest)
 	}
 
 	///ditto
-	void toString(Sink)(ref Sink sink, string function(Digest) digestCodeOfObj = &defaultDigestCodeOfObj)
+	void toString(Sink)(ref Sink sink,
+		string delegate(Digest) digestCodeOfObj = toDelegate(&defaultDigestCodeOfObj))
 		if(isOutputRange!(Sink, const(char)))
 	{
 		sink.put('[');
@@ -485,11 +487,11 @@ Salt is optional. It will be generated at random if not provided.
 Normally, the salt and password are combined as (psuedocode) 'salt~password'.
 There is no cryptographic benefit to combining the salt and password any
 other way. However, if you need to support an alternate method for
-compatibility purposes, you can do so by providing a custom salter function.
+compatibility purposes, you can do so by providing a custom salter delegate.
 See the implementation of DAuth's defaultSalter to see how to do this.
 +/
 Hash!TDigest makeHash(TDigest = DefaultDigest)
-	(Password password, Salt salt = randomSalt(), Salter!TDigest salter = &defaultSalter!TDigest)
+	(Password password, Salt salt = randomSalt(), Salter!TDigest salter = toDelegate(&defaultSalter!TDigest))
 	if(isDigest!TDigest)
 {
 	validateStrength!TDigest();
@@ -508,7 +510,7 @@ Hash!TDigest makeHash(TDigest = DefaultDigest)(Password password, Salter!TDigest
 
 ///ditto
 Hash!Digest makeHash()(Digest digest, Password password, Salt salt = randomSalt(),
-	Salter!Digest salter = &defaultSalter!Digest)
+	Salter!Digest salter = toDelegate(&defaultSalter!Digest))
 {
 	validateStrength(digest);
 	return makeHashImpl!Digest(digest, password, salt, salter);
@@ -548,7 +550,7 @@ private Hash!TDigest makeHashImpl(TDigest)
 /// Throws ConvException if the string is malformed.
 ///
 /// To support additional digests besides the built-in (Phobos's CRC32, MD5,
-/// RIPEMD160 and SHA1), supply a custom function for digestFromCode.
+/// RIPEMD160 and SHA1), supply a custom delegate for digestFromCode.
 /// You can defer to DAuth's defaultDigestFromCode to handle the
 /// built-in digests.
 ///
@@ -578,7 +580,7 @@ private Hash!TDigest makeHashImpl(TDigest)
 /// }
 /// -------------------
 Hash!Digest parseHash(string str,
-	Digest function(string) digestFromCode = &defaultDigestFromCode)
+	Digest delegate(string) digestFromCode = toDelegate(&defaultDigestFromCode))
 {
 	// No need to mess with UTF
 	auto bytes = cast(immutable(ubyte)[]) str;
@@ -611,7 +613,7 @@ Hash!Digest parseHash(string str,
 
 /// Validates a password against an existing salted hash.
 bool isPasswordCorrect(TDigest = DefaultDigest)(Password password, Hash!TDigest sHash,
-	Salter!TDigest salter = &defaultSalter!TDigest)
+	Salter!TDigest salter = toDelegate(&defaultSalter!TDigest))
 	if(isAnyDigest!TDigest)
 {
 	auto testHash = makeHash!TDigest(password, sHash.salt, salter);
@@ -621,7 +623,7 @@ bool isPasswordCorrect(TDigest = DefaultDigest)(Password password, Hash!TDigest 
 ///ditto
 bool isPasswordCorrect(TDigest = DefaultDigest)
 	(Password password, DigestType!TDigest hash, Salt salt,
-		Salter!TDigest salter = &defaultSalter!TDigest)
+		Salter!TDigest salter = toDelegate(&defaultSalter!TDigest))
 	if(isDigest!TDigest)
 {
 	auto testHash = makeHash!TDigest(password, salt, salter);
@@ -631,7 +633,7 @@ bool isPasswordCorrect(TDigest = DefaultDigest)
 ///ditto
 bool isPasswordCorrect()(Password password,
 	ubyte[] hash, Salt salt, Digest digest = new DefaultDigestClass(),
-	Salter!Digest salter = &defaultSalter!Digest)
+	Salter!Digest salter = toDelegate(&defaultSalter!Digest))
 {
 	auto testHash = makeHash(digest, password, salt, salter);
 	return lengthConstantEquals(testHash.hash, hash);
@@ -671,7 +673,7 @@ unittest
 	assert( result1.toString() == text("[SHA1]", sha1Hash2Base64, "$", sha1Hash1Base64) );
 	
 	unitlog("Testing makeHash([digest,] pass, salt [, salter])");
-	static void altSalter(TDigest)(ref TDigest digest, Password password, Salt salt)
+	void altSalter(TDigest)(ref TDigest digest, Password password, Salt salt)
 	{
 		// Reverse order
 		digest.put(password.data);
