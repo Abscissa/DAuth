@@ -53,7 +53,7 @@ version(DAuth_AllowWeakSecurity) {} else
 alias Salt = ubyte[]; /// Salt type
 alias Salter(TDigest) = void delegate(ref TDigest, Password, Salt); /// Convenience alias for salter delegates.
 alias DefaultCryptoRand = Mt19937; /// Bad choice, but I'm not sure if Phobos has a crypto-oriented random.
-alias DefaultDigest = SHA512; /// Bad choice, but the best Phobos currently has.
+alias DefaultDigest = SHA512; /// Default is SHA-512
 alias DefaultDigestClass = WrapperDigest!DefaultDigest; /// OO-style version of 'DefaultDigest'.
 alias TokenBase64 = Base64Impl!('-', '_', '~'); /// Implementation of Base64 engine used for tokens.
 
