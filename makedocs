@@ -1,6 +1,4 @@
 #!/bin/sh
-dmd -c -o- -Dddocs src/dauth.d
-
 rdmd -Isrc --build-only --force -c -Dddocs src/dauth/package.d
 mv docs/package.html docs/index.html
 rm src/dauth/package
