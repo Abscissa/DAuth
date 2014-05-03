@@ -37,6 +37,11 @@ import std.random;
 import std.range;
 import std.typecons;
 
+import sha;
+alias SHA1 = std.digest.sha.SHA1;
+alias SHA1Digest = std.digest.sha.SHA1Digest;
+alias sha1Of = std.digest.sha.sha1Of;
+
 version(DAuth_Unittest)
 {
 	version(DAuth_Unittest_Quiet) {} else
@@ -63,7 +68,7 @@ version(DAuth_AllowWeakSecurity) {} else
 alias Salt = ubyte[]; /// Salt type
 alias Salter(TDigest) = void delegate(ref TDigest, Password, Salt); /// Convenience alias for salter delegates.
 alias DefaultCryptoRand = Mt19937; /// Bad choice, but I'm not sure if Phobos has a crypto-oriented random.
-alias DefaultDigest = SHA1; /// Bad choice, but the best Phobos currently has.
+alias DefaultDigest = SHA512; /// Bad choice, but the best Phobos currently has.
 alias DefaultDigestClass = WrapperDigest!DefaultDigest; /// OO-style version of 'DefaultDigest'.
 alias TokenBase64 = Base64Impl!('-', '_', '~'); /// Implementation of Base64 engine used for tokens.
 
@@ -93,10 +98,16 @@ enum defaultTokenStrength = 36;
 /// See 'Hash!(TDigest).toString' for more info.
 string defaultDigestCodeOfObj(Digest digest)
 {
-	if     (cast( CRC32Digest     )digest) return "CRC32";
-	else if(cast( MD5Digest       )digest) return "MD5";
-	else if(cast( RIPEMD160Digest )digest) return "RIPEMD160";
-	else if(cast( SHA1Digest      )digest) return "SHA1";
+	if     (cast( CRC32Digest      )digest) return "CRC32";
+	else if(cast( MD5Digest        )digest) return "MD5";
+	else if(cast( RIPEMD160Digest  )digest) return "RIPEMD160";
+	else if(cast( SHA1Digest       )digest) return "SHA1";
+	else if(cast( SHA224Digest     )digest) return "SHA224";
+	else if(cast( SHA256Digest     )digest) return "SHA256";
+	else if(cast( SHA384Digest     )digest) return "SHA384";
+	else if(cast( SHA512Digest     )digest) return "SHA512";
+	else if(cast( SHA512_224Digest )digest) return "SHA512_224";
+	else if(cast( SHA512_256Digest )digest) return "SHA512_256";
 	else
 		throw new UnknownDigestException("Unknown digest type");
 }
@@ -107,10 +118,16 @@ Digest defaultDigestFromCode(string digestCode)
 {
 	switch(digestCode)
 	{
-	case "CRC32":     return new CRC32Digest();
-	case "MD5":       return new MD5Digest();
-	case "RIPEMD160": return new RIPEMD160Digest();
-	case "SHA1":      return new SHA1Digest();
+	case "CRC32":      return new CRC32Digest();
+	case "MD5":        return new MD5Digest();
+	case "RIPEMD160":  return new RIPEMD160Digest();
+	case "SHA1":       return new SHA1Digest();
+	case "SHA224":     return new SHA224Digest();
+	case "SHA256":     return new SHA256Digest();
+	case "SHA384":     return new SHA384Digest();
+	case "SHA512":     return new SHA512Digest();
+	case "SHA512_224": return new SHA512_224Digest();
+	case "SHA512_256": return new SHA512_256Digest();
 	default:
 		throw new UnknownDigestException("Unknown digest code");
 	}
@@ -133,21 +150,21 @@ own needs.
 
 And yes, unfortunately, this does currently rule out all RNG's and digests
 currently in Phobos (as of v2.065). They are all known to be fairly weak
-for password-hashing purposes, even SHA1 which despite being heavily used is
-known weak against increasingly practical highly-parallel (ex: GPU) brute-force
-attacks.
+for password-hashing purposes, even SHA1 which despite being heavily used
+has known security flaws.
 
 For random number generators, you should use a CPRNG (cryptographically secure
 pseudorandom number generator):
     $(LINK http://en.wikipedia.org/wiki/Cryptographically_secure_pseudo-random_number_generator )
 
-For digests, you should use an established "key stretching" algorithm
+For digests, you should use one of the SHA-2 algorithms (for example, SHA512)
+or, better yet, an established "key stretching" algorithm
 ( $(LINK http://en.wikipedia.org/wiki/Key_stretching#History) ), intended
 for password hashing. These contain deliberate inefficiencies that cannot be
 optimized away even with massive parallelization (such as a GPU cluster). These
 are NOT too inefficient to use for even high-traffic authentication, but they
 do thwart the parallelized brute force attacks that algorithms used for
-streaming data encryption, such as SHA1, are increasingly susceptible to.
+streaming data encryption, such as SHA, are increasingly susceptible to.
     $(LINK https://crackstation.net/hashing-security.htm)
 +/
 bool isKnownWeak(T)() if(isDigest!T || isUniformRNG!T)
@@ -242,6 +259,8 @@ unittest
 	struct Foo {}
 	static assert(isAnyDigest!SHA1);
 	static assert(isAnyDigest!SHA1Digest);
+	static assert(isAnyDigest!SHA256);
+	static assert(isAnyDigest!SHA256Digest);
 	static assert(!isAnyDigest!Foo);
 	static assert(!isAnyDigest!Object);
 }
@@ -265,6 +284,8 @@ unittest
 	struct Foo {}
 	static assert( is(AnyDigestType!SHA1 == ubyte[20]) );
 	static assert( is(AnyDigestType!SHA1Digest == ubyte[]) );
+	static assert( is(AnyDigestType!SHA512 == ubyte[64]) );
+	static assert( is(AnyDigestType!SHA512Digest == ubyte[]) );
 	static assert( !is(AnyDigestType!Foo) );
 	static assert( !is(AnyDigestType!Object) );
 }
@@ -283,6 +304,8 @@ unittest
 
 	static assert( isHash!(Hash!SHA1) );
 	static assert( isHash!(Hash!SHA1Digest) );
+	static assert( isHash!(Hash!SHA512) );
+	static assert( isHash!(Hash!SHA512Digest) );
 
 	static assert( !isHash!Foo              );
 	static assert( !isHash!(Bar!int)        );
@@ -301,6 +324,7 @@ version(DAuth_Unittest)
 unittest
 {
 	static assert(is( DigestOf!(Hash!SHA1  ) == SHA1  ));
+	static assert(is( DigestOf!(Hash!SHA512) == SHA512));
 	static assert(is( DigestOf!(Hash!Digest) == Digest));
 }
 
@@ -421,7 +445,7 @@ struct Hash(TDigest) if(isAnyDigest!TDigest)
 	/// string format, ready for insertion into a database.
 	///
 	/// To support additional digests besides the built-in (Phobos's CRC32, MD5,
-	/// RIPEMD160 and SHA1), supply a custom delegate for digestCodeOfObj.
+	/// RIPEMD160 and SHA), supply a custom delegate for digestCodeOfObj.
 	/// Your custom digestCodeOfObj only needs to handle OO-style digests.
 	/// As long as the OO-style digests were created using Phobos's
 	/// WrapperDigest template, the template-style version will be handled
@@ -472,12 +496,13 @@ struct Hash(TDigest) if(isAnyDigest!TDigest)
 }
 
 /++
-Generates a salted password using any Phobos-compatible digest, default being SHA1.
+Generates a salted password using any Phobos-compatible digest, default being SHA-512.
 
-(Note: SHA1 is a poor choice for password hashes since it's fast
-and therefore susceptible to parallelized (ex: GPU) brute-force attack.
-A cryptographically-slow algorithm designed for password hashing should
-be used instead, but SHA1 is the best Phobos has at the moment.)
+(Note: An established "key stretching" algorithm
+( $(LINK http://en.wikipedia.org/wiki/Key_stretching#History) ) would be an even
+better choice of digest since they provide better protection against
+highly-parallelized (ex: GPU) brute-force attacks. But SHA-512, as an SHA-2
+algorithm, is still considered cryptographically secure.)
 
 Supports both template-style and OO-style digests. See the documentation of
 std.digest.digest for details.
@@ -550,7 +575,7 @@ private Hash!TDigest makeHashImpl(TDigest)
 /// Throws ConvException if the string is malformed.
 ///
 /// To support additional digests besides the built-in (Phobos's CRC32, MD5,
-/// RIPEMD160 and SHA1), supply a custom delegate for digestFromCode.
+/// RIPEMD160 and SHA), supply a custom delegate for digestFromCode.
 /// You can defer to DAuth's defaultDigestFromCode to handle the
 /// built-in digests.
 ///
@@ -652,25 +677,38 @@ unittest
 {
 	// For validity of sanity checks, these sha1 and base64 strings
 	// were NOT generated using Phobos.
-	auto plainText1      = dupPassword("hello world");
-	enum sha1Hash1       = cast(ubyte[20]) x"2aae6c35c94fcfb415dbe95f408b9ce91ee846ed";
-	enum sha1Hash1Base64 = "Kq5sNclPz7QV2+lfQIuc6R7oRu0=";
+	auto plainText1        = dupPassword("hello world");
+	enum sha1Hash1         = cast(ubyte[20]) x"2aae6c35c94fcfb415dbe95f408b9ce91ee846ed";
+	enum sha1Hash1Base64   = "Kq5sNclPz7QV2+lfQIuc6R7oRu0=";
+	enum sha512Hash1       = cast(ubyte[64]) x"309ecc489c12d6eb4cc40f50c902f2b4d0ed77ee511a7c7a9bcd3ca86d4cd86f989dd35bc5ff499670da34255b45b0cfd830e81f605dcf7dc5542e93ae9cd76f";
+	enum sha512Hash1Base64 = "MJ7MSJwS1utMxA9QyQLytNDtd+5RGnx6m808qG1M2G+YndNbxf9JlnDaNCVbRbDP2DDoH2Bdz33FVC6TrpzXbw==";
 
-	auto plainText2      = dupPassword("some salt");
-	enum sha1Hash2       = cast(ubyte[20]) x"78bc8b0e186b0aa698f12dc27736b492e4dacfc8";
-	enum sha1Hash2Base64 = "eLyLDhhrCqaY8S3Cdza0kuTaz8g=";
+	auto plainText2        = dupPassword("some salt");
+	enum sha1Hash2         = cast(ubyte[20]) x"78bc8b0e186b0aa698f12dc27736b492e4dacfc8";
+	enum sha1Hash2Base64   = "eLyLDhhrCqaY8S3Cdza0kuTaz8g=";
+	enum sha512Hash2       = cast(ubyte[64]) x"637246608760dc79f00d3ad4fd26c246bb217e10f811cdbf6fe602c3981e98b8cadacadc452808ae393ac46e8a7e967aa99711d7fd7ed6c055264787f8043693";
+	enum sha512Hash2Base64 = "Y3JGYIdg3HnwDTrU/SbCRrshfhD4Ec2/b+YCw5gemLjK2srcRSgIrjk6xG6KfpZ6qZcR1/1+1sBVJkeH+AQ2kw==";
 	
 	unitlog("Sanity checking unittest's data");
 	assert(sha1Of(plainText1.data) == sha1Hash1);
 	assert(sha1Of(plainText2.data) == sha1Hash2);
+	assert(sha512Of(plainText1.data) == sha512Hash1);
+	assert(sha512Of(plainText2.data) == sha512Hash2);
 	assert(Base64.encode(sha1Hash1) == sha1Hash1Base64);
 	assert(Base64.encode(sha1Hash2) == sha1Hash2Base64);
+	assert(Base64.encode(sha512Hash1) == sha512Hash1Base64);
+	assert(Base64.encode(sha512Hash2) == sha512Hash2Base64);
 
 	unitlog("Testing Hash.toString");
 	Hash!SHA1 result1;
 	result1.hash = cast(AnyDigestType!SHA1) sha1Hash1;
 	result1.salt = cast(Salt)               sha1Hash2;
 	assert( result1.toString() == text("[SHA1]", sha1Hash2Base64, "$", sha1Hash1Base64) );
+
+	Hash!SHA512 result1_512;
+	result1_512.hash = cast(AnyDigestType!SHA512) sha512Hash1;
+	result1_512.salt = cast(Salt)                 sha512Hash2;
+	assert( result1_512.toString() == text("[SHA512]", sha512Hash2Base64, "$", sha512Hash1Base64) );
 	
 	unitlog("Testing makeHash([digest,] pass, salt [, salter])");
 	void altSalter(TDigest)(ref TDigest digest, Password password, Salt salt)
@@ -689,7 +727,6 @@ unittest
 	assert(result2.hash       == result3.hash);
 	assert(result2.toString() == result3.toString());
 	assert(result2.toString() == makeHash!SHA1(plainText1, cast(Salt)sha1Hash2[]).toString());
-
 	assert(result2.salt == result1.salt);
 
 	assert(result2AltSalter.salt       == result3AltSalter.salt);
@@ -700,6 +737,26 @@ unittest
 	assert(result2.salt       == result2AltSalter.salt);
 	assert(result2.hash       != result2AltSalter.hash);
 	assert(result2.toString() != result2AltSalter.toString());
+
+	auto result2_512          = makeHash!SHA512(plainText1, cast(Salt)sha512Hash2[]);
+	auto result2_512AltSalter = makeHash!SHA512(plainText1, cast(Salt)sha512Hash2[], &altSalter!SHA512);
+	auto result3_512          = makeHash(new SHA512Digest(), plainText1, cast(Salt)sha512Hash2[]);
+	auto result3_512AltSalter = makeHash(new SHA512Digest(), plainText1, cast(Salt)sha512Hash2[], &altSalter!Digest);
+
+	assert(result2_512.salt       == result3_512.salt);
+	assert(result2_512.hash       == result3_512.hash);
+	assert(result2_512.toString() == result3_512.toString());
+	assert(result2_512.toString() == makeHash!SHA512(plainText1, cast(Salt)sha512Hash2[]).toString());
+	assert(result2_512.salt == result1_512.salt);
+
+	assert(result2_512AltSalter.salt       == result3_512AltSalter.salt);
+	assert(result2_512AltSalter.hash       == result3_512AltSalter.hash);
+	assert(result2_512AltSalter.toString() == result3_512AltSalter.toString());
+	assert(result2_512AltSalter.toString() == makeHash!SHA512(plainText1, cast(Salt)sha512Hash2[], &altSalter!SHA512).toString());
+	
+	assert(result2_512.salt       == result2_512AltSalter.salt);
+	assert(result2_512.hash       != result2_512AltSalter.hash);
+	assert(result2_512.toString() != result2_512AltSalter.toString());
 
 	unitlog("Testing makeHash(pass)");
 	auto resultRand1 = makeHash!SHA1(randomPassword());
