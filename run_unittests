@@ -1,2 +1,2 @@
 #!/bin/sh
-rdmd -unittest -version=DAuth_AllowWeakSecurity -version=DAuth_Unittest -main --force "$@" src/dauth.d
+rdmd -unittest -version=DAuth_AllowWeakSecurity -version=DAuth_Unittest -Isrc -main --force "$@" src/dauth/package.d

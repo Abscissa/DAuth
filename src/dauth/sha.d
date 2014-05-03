@@ -1,7 +1,9 @@
 // Written in the D programming language.
 /**
 This has been temporarily added to DAuth until it becomes part of Phobos:
-https://github.com/D-Programming-Language/phobos/pull/2129
+$(LINK https://github.com/D-Programming-Language/phobos/pull/2129)
+
+Main module: $(LINK2 index.html,dauth)$(BR)
 
  * Computes SHA1 and SHA2 hashes of arbitrary data. SHA hashes are 20 to 64 byte
  * quantities (depending on the SHA algorithm) that are like a checksum or CRC,
@@ -46,6 +48,7 @@ https://github.com/D-Programming-Language/phobos/pull/2129
  *          http://www.boost.org/LICENSE_1_0.txt)
  */
 //module std.digest.sha;
+module dauth.sha;
 
 ///
 unittest
