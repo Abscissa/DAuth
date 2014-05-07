@@ -54,8 +54,6 @@ module dauth.sha;
 unittest
 {
     //Template API
-    import std.digest.sha;
-
     ubyte[20] hash1 = sha1Of("abc");
     assert(toHexString(hash1) == "A9993E364706816ABA3E25717850C26C9CD0D89D");
 
@@ -76,8 +74,6 @@ unittest
 unittest
 {
     //OOP API
-    import std.digest.sha;
-
     auto sha1 = new SHA1Digest();
     ubyte[] hash1 = sha1.digest("abc");
     assert(toHexString(hash1) == "A9993E364706816ABA3E25717850C26C9CD0D89D");

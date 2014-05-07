@@ -23,6 +23,7 @@ import std.range;
 import std.typecons;
 
 import dauth.core;
+import dauth.hashdrbg;
 
 /// In characters. Default length of randomly-generated passwords.
 enum defaultPasswordLength = 20;
@@ -436,6 +437,6 @@ body
 private void initRand(Rand)(ref Rand rand)
 	if(isUniformRNG!Rand)
 {
-	if(isSeedable!Rand)
+	static if(isSeedable!Rand)
 		rand.seed(unpredictableSeed);
 }

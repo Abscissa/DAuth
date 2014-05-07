@@ -2,7 +2,7 @@
 DAuth v0.5.1 - Authentication Utility for D
 
 Writen in the D programming language.
-Tested with DMD 2.064.2 and 2.065
+Tested with DMD 2.065
 Licensed under The zlib/libpng License
 
 Homepage:
@@ -21,7 +21,9 @@ DMD flags to enable DAuth unittests, but silence all non-error output:
 
 Note that dauth.sha is not automatically included by "import dauth;" and must
 be imported separately. This is because it's only in DAuth temporarily, until
-SHA-2 is in Phobos: $(LINK https://github.com/D-Programming-Language/phobos/pull/2129)
+SHA-2 is in Phobos: $(LINK https://github.com/D-Programming-Language/phobos/pull/2129).
+The module dauth.hashdrbg is also excluded by default because a Phobos pull request
+is in the works.
 
 Import all:
 ------------
@@ -41,4 +43,7 @@ public import dauth.core;
 public import dauth.random;
 
 version(DAuth_Unittest)
+{
 	import dauth.sha;
+	import dauth.hashdrbg;
+}
