@@ -270,6 +270,12 @@ unittest
 
 	entropy.popFront();
 	assert(val != entropy.front);
+	
+	auto entropyCopy = entropy;
+	assert(entropy.front == entropyCopy.front);
+	entropy.popFront();
+	entropyCopy.popFront();
+	assert(entropy.front != entropyCopy.front);
 }
 
 /++
@@ -304,17 +310,17 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG")
 	
 	// value[1..$] is Hash_DRBG's secret working state value V
 	// value[0] is a scratchpad to avoid unnecessary copying/concating of V
-	private ubyte[seedSizeBytes+1] value;
+	private static ubyte[seedSizeBytes+1] value;
 
-	private ubyte[seedSizeBytes] constant; // Hash_DRBG's secret working state value C
-	private uint numGenerated; // Number of values generated with the current seed
+	private static ubyte[seedSizeBytes] constant; // Hash_DRBG's secret working state value C
+	private static uint numGenerated; // Number of values generated with the current seed
 
 	// Maximum number of values generated before automatically reseeding with fresh entropy.
 	// The algorithm's spec permits this to be anything less than or equal to 2^48,
 	// but we should take care not to overflow our actual countner.
 	private enum int maxGenerated = 0x0FFF_FFFF;
 	
-	private bool inited = false;
+	private static bool inited = false;
 	private void init()
 	{
 		if(inited)
@@ -471,11 +477,39 @@ alias HashDRBGStream(string custom) = HashDRBGStream!(SHA512, custom);
 version(DAuth_Unittest)
 unittest
 {
-	unitlog("Testing HashDRBGStream");
+	alias RandStreamTypes = TypeTuple!(
+		SystemEntropyStream,
+		HashDRBGStream!SHA1,
+		HashDRBGStream!SHA224,
+		HashDRBGStream!SHA256,
+		HashDRBGStream!SHA384,
+		HashDRBGStream!SHA512,
+		HashDRBGStream!SHA512_224,
+		HashDRBGStream!SHA512_256,
+		HashDRBGStream!(SHA512, "other custom str"),
+	);
 	
-	HashDRBGStream!() a;
-	HashDRBGStream!SHA256 b;
-	HashDRBGStream!"foobar" c;
+	foreach(RandStream; RandStreamTypes)
+	{
+		unitlog("Testing RandStream: "~RandStream.stringof);
+		
+		RandStream rand;
+		ubyte[] values1;
+		ubyte[] values2;
+		values1.length = 10;
+		values2.length = 10;
+		
+		rand.read(values1);
+		assert(values1 != typeof(values1).init);
+		assert(values1[0..4] != values1[4..8]);
+		rand.read(values2);
+		assert(values1 != values2);
+		
+		auto randCopy = rand;
+		rand.read(values1);
+		randCopy.read(values2);
+		assert(values1 != values2);
+	}
 }
 
 version(DAuth_Unittest)
@@ -572,4 +606,10 @@ unittest
 
 	rand.popFront();
 	assert(val != rand.front);
+
+	auto randCopy = rand;
+	assert(rand.front == randCopy.front);
+	rand.popFront();
+	randCopy.popFront();
+	assert(rand.front != randCopy.front);
 }
