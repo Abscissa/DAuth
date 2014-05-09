@@ -54,7 +54,7 @@ version(DAuth_AllowWeakSecurity) {} else
 
 alias Salt = ubyte[]; /// Salt type
 alias Salter(TDigest) = void delegate(ref TDigest, Password, Salt); /// Convenience alias for salter delegates.
-alias DefaultCryptoRand = HashDRBG!(uint, SHA512, "DAuth"); /// Default is Hash_DRBG using SHA-512
+alias DefaultCryptoRand = HashDRBGStream!(SHA512, "DAuth"); /// Default is Hash_DRBG using SHA-512
 alias DefaultDigest = SHA512; /// Default is SHA-512
 alias DefaultDigestClass = WrapperDigest!DefaultDigest; /// OO-style version of 'DefaultDigest'.
 alias TokenBase64 = Base64Impl!('-', '_', '~'); /// Implementation of Base64 engine used for tokens.
@@ -132,7 +132,7 @@ do thwart the parallelized brute force attacks that algorithms used for
 streaming data encryption, such as SHA, are increasingly susceptible to.
     $(LINK https://crackstation.net/hashing-security.htm)
 +/
-bool isKnownWeak(T)() if(isDigest!T || isUniformRNG!T)
+bool isKnownWeak(T)() if(isDigest!T || isSomeRandom!T)
 {
 	return
 		is(T == CRC32) ||
@@ -166,7 +166,7 @@ bool isKnownWeak(T)(T digest) if(is(T : Digest))
 		cast(SHA1Digest)digest;
 }
 
-private void validateStrength(T)() if(isDigest!T || isUniformRNG!T)
+private void validateStrength(T)() if(isDigest!T || isSomeRandom!T)
 {
 	version(DisallowWeakSecurity)
 	{

@@ -66,7 +66,7 @@ Password randomPassword(Rand = DefaultCryptoRand) (
 	size_t length = defaultPasswordLength,
 	const(ubyte)[] passwordChars = defaultPasswordChars
 )
-if(isUniformRNG!Rand)
+if(isSomeStream!Rand)
 out(result)
 {
 	assert(result.length == length);
@@ -84,7 +84,7 @@ Password randomPassword(Rand = DefaultCryptoRand) (
 	size_t length = defaultPasswordLength,
 	const(ubyte)[] passwordChars = defaultPasswordChars
 )
-if(isUniformRNG!Rand)
+if(isSomeStream!Rand)
 out(result)
 {
 	assert(result.length == length);
@@ -102,7 +102,7 @@ void randomPassword(Rand = DefaultCryptoRand, Sink)(
 	size_t length = defaultPasswordLength,
 	const(ubyte)[] passwordChars = defaultPasswordChars
 )
-if( isUniformRNG!Rand && isOutputRange!(Sink, ubyte) )
+if( isSomeStream!Rand && isOutputRange!(Sink, ubyte) )
 {
 	Rand rand;
 	rand.initRand();
@@ -115,16 +115,21 @@ void randomPassword(Rand = DefaultCryptoRand, Sink) (
 	size_t length = defaultPasswordLength,
 	const(ubyte)[] passwordChars = defaultPasswordChars
 )
-if( isUniformRNG!Rand && isOutputRange!(Sink, ubyte) )
+if( isSomeStream!Rand && isOutputRange!(Sink, ubyte) )
 {
 	enforce(passwordChars.length >= 2);
 	
-	rand.popFront(); // Ensure fresh data
+	static if(isUniformRNG!Rand)
+		alias randRange = rand;
+	else
+		WrappedStreamRNG!(Rand, uint) randRange;
+	
+	randRange.popFront(); // Ensure fresh data
 	foreach(i; 0..length)
 	{
-		auto charIndex = rand.front % passwordChars.length;
+		auto charIndex = randRange.front % passwordChars.length;
 		sink.put(passwordChars[charIndex]);
-		rand.popFront();
+		randRange.popFront();
 	}
 }
 
@@ -269,14 +274,14 @@ WARNING! Mt19937 (the default here) is not a "Cryptographically secure
 pseudorandom number generator"
 +/
 Salt randomSalt(Rand = DefaultCryptoRand)(size_t length = defaultSaltLength)
-	if(isUniformRNG!Rand)
+	if(isSomeStream!Rand)
 {
 	return randomBytes!Rand(length);
 }
 
 ///ditto
 Salt randomSalt(Rand = DefaultCryptoRand)(ref Rand rand, size_t length = defaultSaltLength)
-	if(isUniformRNG!Rand)
+	if(isSomeStream!Rand)
 {
 	return randomBytes(length, rand);
 }
@@ -342,14 +347,14 @@ WARNING! Mt19937 (the default here) is not a "Cryptographically secure
 pseudorandom number generator"
 +/
 string randomToken(Rand = DefaultCryptoRand)(size_t strength = defaultTokenStrength)
-	if(isUniformRNG!Rand)
+	if(isSomeStream!Rand)
 {
 	return TokenBase64.encode( randomBytes!Rand(strength) );
 }
 
 ///ditto
 string randomToken(Rand = DefaultCryptoRand)(ref Rand rand, size_t strength = defaultTokenStrength)
-	if(isUniformRNG!Rand)
+	if(isSomeStream!Rand)
 {
 	return TokenBase64.encode( randomBytes(strength, rand) );
 }
@@ -413,7 +418,7 @@ unittest
 ///
 /// numBytes must be a multiple of 4, or this will throw an Exception
 ubyte[] randomBytes(Rand = DefaultCryptoRand)(size_t numBytes)
-	if(isUniformRNG!Rand)
+	if(isSomeStream!Rand)
 {
 	Rand rand;
 	rand.initRand();
@@ -422,7 +427,7 @@ ubyte[] randomBytes(Rand = DefaultCryptoRand)(size_t numBytes)
 
 ///ditto
 ubyte[] randomBytes(Rand = DefaultCryptoRand)(size_t numBytes, ref Rand rand)
-	if(isUniformRNG!Rand)
+	if(isSomeStream!Rand)
 out(result)
 {
 	assert(result.length == numBytes);
@@ -430,12 +435,23 @@ out(result)
 body
 {
 	enforce(numBytes % 4 == 0, "numBytes must be multiple of 4, not "~to!string(numBytes));
-	rand.popFront(); // Ensure fresh data
-	return cast(ubyte[])( rand.take(numBytes/4).array() );
+	
+	static if(isRandomStream!Rand)
+	{
+		ubyte[] result;
+		result.length = numBytes;
+		rand.read(result);
+		return result;
+	}
+	else // Fallback to range version
+	{
+		rand.popFront(); // Ensure fresh data
+		return cast(ubyte[])( rand.take(numBytes/4).array() );
+	}
 }
 
 private void initRand(Rand)(ref Rand rand)
-	if(isUniformRNG!Rand)
+	if(isSomeStream!Rand)
 {
 	static if(isSeedable!Rand)
 		rand.seed(unpredictableSeed);

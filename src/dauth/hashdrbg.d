@@ -33,6 +33,9 @@ enum isRandomStream(T) =
 		t.read(buf);
 	}));
 
+/// Check whether T is either isUniformRNG or isRandomStream.
+enum isSomeStream(T) = isUniformRNG!T || isRandomStream!T;
+
 static assert(isRandomStream!(SystemEntropyStream));
 static assert(isRandomStream!(HashDRBGStream!()));
 static assert(!isRandomStream!(SystemEntropy!uint));
@@ -609,10 +612,11 @@ unittest
 version(DAuth_Unittest)
 unittest
 {
+	// Don't test ubyte or ushort versions here because legitimate repeated
+	// values are too likely and would trigger a failure and unfounded worry.
+	
 	alias RandTypes = TypeTuple!(
 		SystemEntropy!ulong,
-		SystemEntropy!ubyte,
-		SystemEntropy!ushort,
 		SystemEntropy!uint,
 		SystemEntropy!(ubyte[5]),
 		SystemEntropy!(ubyte[1024]),
@@ -624,8 +628,6 @@ unittest
 		HashDRBG!(ulong, SHA512_224),
 		HashDRBG!(ulong, SHA512_256),
 		HashDRBG!(ulong, SHA512, "other custom str"),
-		HashDRBG!(ubyte, SHA512),
-		HashDRBG!(ushort,  SHA512),
 		HashDRBG!(uint,    SHA512),
 		HashDRBG!(ubyte[5], SHA512),
 		HashDRBG!(ubyte[1024], SHA512),
