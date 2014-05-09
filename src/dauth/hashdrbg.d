@@ -243,41 +243,6 @@ static assert(isUniformRNG!(SystemEntropy!ushort,     ushort  ));
 static assert(isUniformRNG!(SystemEntropy!uint,       uint    ));
 static assert(isUniformRNG!(SystemEntropy!ulong,      ulong   ));
 
-version(DAuth_Unittest)
-unittest
-{
-	unitlog("Testing SystemEntropy");
-
-	assert(SystemEntropy!(ubyte[1]).min == [0x00]);
-	assert(SystemEntropy!(ubyte[1]).max == [0xFF]);
-	assert(SystemEntropy!(ubyte[5]).min == [0x00,0x00,0x00,0x00,0x00]);
-	assert(SystemEntropy!(ubyte[5]).max == [0xFF,0xFF,0xFF,0xFF,0xFF]);
-	assert(SystemEntropy!(ubyte   ).min == ubyte .min);
-	assert(SystemEntropy!(ubyte   ).max == ubyte .max);
-	assert(SystemEntropy!(ushort  ).min == ushort.min);
-	assert(SystemEntropy!(ushort  ).max == ushort.max);
-	assert(SystemEntropy!(uint    ).min == uint  .min);
-	assert(SystemEntropy!(uint    ).max == uint  .max);
-	assert(SystemEntropy!(ulong   ).min == ulong .min);
-	assert(SystemEntropy!(ulong   ).max == ulong .max);
-
-	SystemEntropy!ulong entropy;
-	assert(!entropy.empty);
-	
-	assert(entropy.front == entropy.front);
-	auto val = entropy.front;
-	assert(val != ulong.init);
-
-	entropy.popFront();
-	assert(val != entropy.front);
-	
-	auto entropyCopy = entropy;
-	assert(entropy.front == entropyCopy.front);
-	entropy.popFront();
-	entropyCopy.popFront();
-	assert(entropy.front != entropyCopy.front);
-}
-
 /++
 Cryptographic random number generator Hash_DRBG, as defined in
 NIST's $(LINK2 http://csrc.nist.gov/publications/nistpubs/800-90A/SP800-90A.pdf, SP800-90A).
@@ -489,9 +454,10 @@ unittest
 		HashDRBGStream!(SHA512, "other custom str"),
 	);
 	
+	unitlog("Testing SystemEntropyStream/HashDRBGStream");
 	foreach(RandStream; RandStreamTypes)
 	{
-		unitlog("Testing RandStream: "~RandStream.stringof);
+		//unitlog("Testing RandStream: "~RandStream.stringof);
 		
 		RandStream rand;
 		ubyte[] values1;
@@ -582,34 +548,96 @@ static assert(isUniformRNG!(HashDRBG!(uint, SHA256, "custom"), uint));
 version(DAuth_Unittest)
 unittest
 {
-	unitlog("Testing HashDRBG");
+	unitlog("Testing SystemEntropy");
 
-	assert(HashDRBG!(ubyte[1]).min == [0x00]);
-	assert(HashDRBG!(ubyte[1]).max == [0xFF]);
-	assert(HashDRBG!(ubyte[5]).min == [0x00,0x00,0x00,0x00,0x00]);
-	assert(HashDRBG!(ubyte[5]).max == [0xFF,0xFF,0xFF,0xFF,0xFF]);
-	assert(HashDRBG!(ubyte   ).min == ubyte .min);
-	assert(HashDRBG!(ubyte   ).max == ubyte .max);
-	assert(HashDRBG!(ushort  ).min == ushort.min);
-	assert(HashDRBG!(ushort  ).max == ushort.max);
-	assert(HashDRBG!(uint    ).min == uint  .min);
-	assert(HashDRBG!(uint    ).max == uint  .max);
-	assert(HashDRBG!(ulong   ).min == ulong .min);
-	assert(HashDRBG!(ulong   ).max == ulong .max);
+	assert(SystemEntropy!(ubyte[1]).min == [0x00]);
+	assert(SystemEntropy!(ubyte[1]).max == [0xFF]);
+	assert(SystemEntropy!(ubyte[5]).min == [0x00,0x00,0x00,0x00,0x00]);
+	assert(SystemEntropy!(ubyte[5]).max == [0xFF,0xFF,0xFF,0xFF,0xFF]);
+	assert(SystemEntropy!(ubyte   ).min == ubyte .min);
+	assert(SystemEntropy!(ubyte   ).max == ubyte .max);
+	assert(SystemEntropy!(ushort  ).min == ushort.min);
+	assert(SystemEntropy!(ushort  ).max == ushort.max);
+	assert(SystemEntropy!(uint    ).min == uint  .min);
+	assert(SystemEntropy!(uint    ).max == uint  .max);
+	assert(SystemEntropy!(ulong   ).min == ulong .min);
+	assert(SystemEntropy!(ulong   ).max == ulong .max);
 
-	HashDRBG!ulong rand;
-	assert(!rand.empty);
+	SystemEntropy!ulong entropy;
+	assert(!entropy.empty);
 	
-	assert(rand.front == rand.front);
-	auto val = rand.front;
+	assert(entropy.front == entropy.front);
+	auto val = entropy.front;
 	assert(val != ulong.init);
 
-	rand.popFront();
-	assert(val != rand.front);
+	entropy.popFront();
+	assert(val != entropy.front);
+	
+	auto entropyCopy = entropy;
+	assert(entropy.front == entropyCopy.front);
+	entropy.popFront();
+	entropyCopy.popFront();
+	assert(entropy.front != entropyCopy.front);
+}
 
-	auto randCopy = rand;
-	assert(rand.front == randCopy.front);
-	rand.popFront();
-	randCopy.popFront();
-	assert(rand.front != randCopy.front);
+
+version(DAuth_Unittest)
+unittest
+{
+	foreach(Rand; TypeTuple!(SystemEntropy, HashDRBG))
+	{
+		unitlog("Testing Rand's min/max: "~Rand.stringof);
+
+		assert(Rand!(ubyte[1]).min == [0x00]);
+		assert(Rand!(ubyte[1]).max == [0xFF]);
+		assert(Rand!(ubyte[5]).min == [0x00,0x00,0x00,0x00,0x00]);
+		assert(Rand!(ubyte[5]).max == [0xFF,0xFF,0xFF,0xFF,0xFF]);
+		assert(Rand!(ubyte   ).min == ubyte .min);
+		assert(Rand!(ubyte   ).max == ubyte .max);
+		assert(Rand!(ushort  ).min == ushort.min);
+		assert(Rand!(ushort  ).max == ushort.max);
+		assert(Rand!(uint    ).min == uint  .min);
+		assert(Rand!(uint    ).max == uint  .max);
+		assert(Rand!(ulong   ).min == ulong .min);
+		assert(Rand!(ulong   ).max == ulong .max);
+	}
+
+	alias RandTypes = TypeTuple!(
+		SystemEntropy!ulong,
+		HashDRBG!(ulong, SHA1),
+		HashDRBG!(ulong, SHA224),
+		HashDRBG!(ulong, SHA256),
+		HashDRBG!(ulong, SHA384),
+		HashDRBG!(ulong, SHA512),
+		HashDRBG!(ulong, SHA512_224),
+		HashDRBG!(ulong, SHA512_256),
+		HashDRBG!(ulong, SHA512, "other custom str"),
+		HashDRBG!(ubyte, SHA512),
+		HashDRBG!(ushort,  SHA512),
+		HashDRBG!(uint,    SHA512),
+		HashDRBG!(ubyte[5], SHA512),
+		HashDRBG!(ubyte[1024], SHA512),
+	);
+	
+	unitlog("Testing SystemEntropy/HashDRBG");
+	foreach(Rand; RandTypes)
+	{
+		//unitlog("Testing Rand: "~Rand.stringof);
+
+		Rand rand;
+		assert(!rand.empty);
+		
+		assert(rand.front == rand.front);
+		auto val = rand.front;
+		assert(val != ElementType!(Rand).init);
+
+		rand.popFront();
+		assert(val != rand.front);
+
+		auto randCopy = rand;
+		assert(rand.front == randCopy.front);
+		rand.popFront();
+		randCopy.popFront();
+		assert(rand.front != randCopy.front);
+	}
 }
