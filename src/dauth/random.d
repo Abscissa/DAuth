@@ -47,6 +47,12 @@ enum defaultSaltLength = 32;
 /// of 12 prevents a padding tilde from existing at the end of every token.
 enum defaultTokenStrength = 36;
 
+/// RNGs used with DAuth must be either a isRandomStream, or
+/// a isUniformRNG input range that emits uint values.
+template isDAuthRandom(T) =
+	isRandomStream!T ||
+	(isUniformRNG!T && is(ElemenType!T == uint));
+
 /++
 Generates a random password.
 
@@ -66,7 +72,7 @@ Password randomPassword(Rand = DefaultCryptoRand) (
 	size_t length = defaultPasswordLength,
 	const(ubyte)[] passwordChars = defaultPasswordChars
 )
-if(isSomeStream!Rand)
+if(isDAuthRandom!Rand)
 out(result)
 {
 	assert(result.length == length);
@@ -84,7 +90,7 @@ Password randomPassword(Rand = DefaultCryptoRand) (
 	size_t length = defaultPasswordLength,
 	const(ubyte)[] passwordChars = defaultPasswordChars
 )
-if(isSomeStream!Rand)
+if(isDAuthRandom!Rand)
 out(result)
 {
 	assert(result.length == length);
@@ -102,7 +108,7 @@ void randomPassword(Rand = DefaultCryptoRand, Sink)(
 	size_t length = defaultPasswordLength,
 	const(ubyte)[] passwordChars = defaultPasswordChars
 )
-if( isSomeStream!Rand && isOutputRange!(Sink, ubyte) )
+if( isDAuthRandom!Rand && isOutputRange!(Sink, ubyte) )
 {
 	Rand rand;
 	rand.initRand();
@@ -115,7 +121,7 @@ void randomPassword(Rand = DefaultCryptoRand, Sink) (
 	size_t length = defaultPasswordLength,
 	const(ubyte)[] passwordChars = defaultPasswordChars
 )
-if( isSomeStream!Rand && isOutputRange!(Sink, ubyte) )
+if( isDAuthRandom!Rand && isOutputRange!(Sink, ubyte) )
 {
 	enforce(passwordChars.length >= 2);
 	
@@ -274,14 +280,14 @@ WARNING! Mt19937 (the default here) is not a "Cryptographically secure
 pseudorandom number generator"
 +/
 Salt randomSalt(Rand = DefaultCryptoRand)(size_t length = defaultSaltLength)
-	if(isSomeStream!Rand)
+	if(isDAuthRandom!Rand)
 {
 	return randomBytes!Rand(length);
 }
 
 ///ditto
 Salt randomSalt(Rand = DefaultCryptoRand)(ref Rand rand, size_t length = defaultSaltLength)
-	if(isSomeStream!Rand)
+	if(isDAuthRandom!Rand)
 {
 	return randomBytes(length, rand);
 }
@@ -347,14 +353,14 @@ WARNING! Mt19937 (the default here) is not a "Cryptographically secure
 pseudorandom number generator"
 +/
 string randomToken(Rand = DefaultCryptoRand)(size_t strength = defaultTokenStrength)
-	if(isSomeStream!Rand)
+	if(isDAuthRandom!Rand)
 {
 	return TokenBase64.encode( randomBytes!Rand(strength) );
 }
 
 ///ditto
 string randomToken(Rand = DefaultCryptoRand)(ref Rand rand, size_t strength = defaultTokenStrength)
-	if(isSomeStream!Rand)
+	if(isDAuthRandom!Rand)
 {
 	return TokenBase64.encode( randomBytes(strength, rand) );
 }
@@ -418,7 +424,7 @@ unittest
 ///
 /// numBytes must be a multiple of 4, or this will throw an Exception
 ubyte[] randomBytes(Rand = DefaultCryptoRand)(size_t numBytes)
-	if(isSomeStream!Rand)
+	if(isDAuthRandom!Rand)
 {
 	Rand rand;
 	rand.initRand();
@@ -427,7 +433,7 @@ ubyte[] randomBytes(Rand = DefaultCryptoRand)(size_t numBytes)
 
 ///ditto
 ubyte[] randomBytes(Rand = DefaultCryptoRand)(size_t numBytes, ref Rand rand)
-	if(isSomeStream!Rand)
+	if(isDAuthRandom!Rand)
 out(result)
 {
 	assert(result.length == numBytes);
@@ -451,7 +457,7 @@ body
 }
 
 private void initRand(Rand)(ref Rand rand)
-	if(isSomeStream!Rand)
+	if(isDAuthRandom!Rand)
 {
 	static if(isSeedable!Rand)
 		rand.seed(unpredictableSeed);
