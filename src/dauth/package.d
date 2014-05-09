@@ -2,7 +2,7 @@
 DAuth v0.5.1 - Authentication Utility for D
 
 Writen in the D programming language.
-Tested with DMD 2.065
+Tested with DMD 2.064.2 and DMD 2.065
 Licensed under The zlib/libpng License
 
 Homepage:
