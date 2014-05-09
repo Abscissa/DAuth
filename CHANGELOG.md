@@ -16,7 +16,7 @@ v0.6.0 - TBD
 
 v0.5.1 - 2014/04/06
 -------------------
-- **Fixed:** DUB package names must be all-lowercase.
+- **Fixed:** [DUB](http://code.dlang.org/) package names must be all-lowercase.
 
 v0.5.0 - 2014/04/06
 -------------------
