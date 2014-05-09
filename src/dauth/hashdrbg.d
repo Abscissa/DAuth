@@ -71,7 +71,7 @@ struct SystemEntropyStream
 		private static File devRandom;
 	else
 		static assert(false);
-	
+	 
 	/// Fills the buffer with entropy from the system-specific entropy generator.
 	/// Automatically opens SystemEntropyStream if it's closed.
 	// This can't be static or it will "Access Violation" on 32-bit Windows.
@@ -216,17 +216,17 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG")
 		seedMaterial[$-custom.length .. $] = cast(ubyte[])custom;
 		
 		// Generate seed for V
-		hashDerivation(seedMaterial, value[1..$]);
+		hashDerivation(seedMaterial, null, value[1..$]);
 		
 		// Generate constant
 		value[0] = 0x00;
-		hashDerivation(value, constant);
+		hashDerivation(value, null, constant);
 		
 		numGenerated = 0;
 		inited = true;
 	}
 	
-	private void reseed()
+	private void reseed(ubyte[] extraInput=null)
 	{
 		// seedMaterial = 0x01 ~ V ~ entropy; (Omit optional "additional_input")
 		ubyte[value.sizeof + entropySizeBytes] seedMaterial = void;
@@ -235,11 +235,11 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG")
 		SystemEntropyStream().read( seedMaterial[$-entropySizeBytes .. $] );
 		
 		// Generate seed for V
-		hashDerivation(seedMaterial, value[1..$]);
+		hashDerivation(seedMaterial, extraInput, value[1..$]);
 		
 		// Generate constant
 		value[0] = 0x00;
-		hashDerivation(value, constant);
+		hashDerivation(value, null, constant);
 
 		numGenerated = 0;
 	}
@@ -253,10 +253,23 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG")
 	Default is No.PredictionResistance.
 	+/
 	void read(ubyte[] buf,
-		Flag!"PredictionResistance" predictionResistance = No.PredictionResistance)
+		Flag!"PredictionResistance" predictionResistance = No.PredictionResistance,
+		ubyte[] extraInput = null)
 	{
 		if(numGenerated >= maxGenerated || predictionResistance == Yes.PredictionResistance)
-			reseed();
+			reseed(extraInput);
+		
+		if(extraInput)
+		{
+			value[0] = 0x02;
+
+			TSHA sha;
+			sha.put(value);
+			sha.put(extraInput);
+			ubyte[seedSizeBytes] tempHash;
+			tempHash[0..outputSizeBits/8] = sha.finish();
+			addHash!seedSizeBytes(value[1..$], tempHash, value[1..$]);
+		}
 		
 		ubyte[seedSizeBytes] workingData = value[1..$];
 		if(buf.length > 0)
@@ -286,8 +299,14 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG")
 		
 		numGenerated++;
 	}
+
+	///ditto
+	void read(ubyte[] buf, ubyte[] extraInput)
+	{
+		read(buf, No.PredictionResistance, extraInput);
+	}
 	
-	private static void hashDerivation(ubyte[] input, ubyte[] buf)
+	private static void hashDerivation(ubyte[] input, ubyte[] extraInput, ubyte[] buf)
 	{
 		ubyte counter = 1;
 		ulong originalBufLength = buf.length;
@@ -298,6 +317,8 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG")
 			sha.put(counter);
 			sha.put(*(cast(ubyte[8]*) &originalBufLength));
 			sha.put(input);
+			if(extraInput)
+				sha.put(extraInput);
 			auto currHash = sha.finish();
 			
 			// Fill the front of buf with the hashed data
@@ -542,6 +563,25 @@ unittest
 		rand.read(values1);
 		randCopy.read(values2);
 		assert(values1 != values2);
+		
+		static if(!is(RandStream == SystemEntropyStream))
+		{
+			values2[] = ubyte.init;
+
+			// Crashes on 32-bit Win
+			//values1[] = ubyte.init;
+			//rand.read(values1, Yes.PredictionResistance);
+			//assert(values1 != values2);
+			
+			values1[] = ubyte.init;
+			rand.read(values1, cast(ubyte[])"additional input");
+			assert(values1 != values2);
+			
+			// Crashes on 32-bit Win
+			//values1[] = ubyte.init;
+			//rand.read(values1, Yes.PredictionResistance, cast(ubyte[])"additional input");
+			//assert(values1 != values2);
+		}
 	}
 }
 
