@@ -65,7 +65,7 @@ struct SystemEntropyStream
 	version(Windows)
 	{
 		private static HMODULE _advapi32;
-		private static extern(Windows) BOOL function(void*, ulong) _RtlGenRandom;
+		private static extern(Windows) BOOL function(void*, uint) _RtlGenRandom;
 	}
 	else version(Posix)
 		private static File devRandom;
@@ -74,14 +74,15 @@ struct SystemEntropyStream
 	 
 	/// Fills the buffer with entropy from the system-specific entropy generator.
 	/// Automatically opens SystemEntropyStream if it's closed.
-	// This can't be static or it will "Access Violation" on 32-bit Windows.
-	// I have no freaking idea why.
-	/+static+/ void read(ubyte[] buf)
+	static void read(ubyte[] buf)
 	{
 		open();
 		
 		version(Windows)
-			_RtlGenRandom(buf.ptr, buf.length);
+		{
+			enforce(buf.length < uint.max, "Cannot read more than uint.max bytes from RtlGenRandom");
+			_RtlGenRandom(buf.ptr, cast(uint)buf.length);
+		}
 		else version(Posix)
 			devRandom.rawRead(buf);
 		else
@@ -212,7 +213,7 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG")
 		
 		// seedMaterial = entropy ~ nonce ~ custom;
 		ubyte[entropySizeBytes + nonceSizeBytes + custom.length] seedMaterial = void;
-		SystemEntropyStream().read( seedMaterial[0 .. $-custom.length] );
+		SystemEntropyStream.read( seedMaterial[0 .. $-custom.length] );
 		seedMaterial[$-custom.length .. $] = cast(ubyte[])custom;
 		
 		// Generate seed for V
@@ -232,7 +233,7 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG")
 		ubyte[value.sizeof + entropySizeBytes] seedMaterial = void;
 		seedMaterial[0] = 0x01;
 		seedMaterial[1 .. $-entropySizeBytes] = value[1..$];
-		SystemEntropyStream().read( seedMaterial[$-entropySizeBytes .. $] );
+		SystemEntropyStream.read( seedMaterial[$-entropySizeBytes .. $] );
 		
 		// Generate seed for V
 		hashDerivation(seedMaterial, extraInput, value[1..$]);
@@ -568,19 +569,17 @@ unittest
 		{
 			values2[] = ubyte.init;
 
-			// Crashes on 32-bit Win
-			//values1[] = ubyte.init;
-			//rand.read(values1, Yes.PredictionResistance);
-			//assert(values1 != values2);
+			values1[] = ubyte.init;
+			rand.read(values1, Yes.PredictionResistance);
+			assert(values1 != values2);
 			
 			values1[] = ubyte.init;
 			rand.read(values1, cast(ubyte[])"additional input");
 			assert(values1 != values2);
 			
-			// Crashes on 32-bit Win
-			//values1[] = ubyte.init;
-			//rand.read(values1, Yes.PredictionResistance, cast(ubyte[])"additional input");
-			//assert(values1 != values2);
+			values1[] = ubyte.init;
+			rand.read(values1, Yes.PredictionResistance, cast(ubyte[])"additional input");
+			assert(values1 != values2);
 		}
 	}
 }
