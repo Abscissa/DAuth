@@ -151,87 +151,6 @@ struct SystemEntropyStream
 	}
 }
 
-/++
-Takes a RandomStream (ex: SystemEntropyStream or HashDRBGStream) and
-wraps it into a UniformRNG InputRange.
-
-Note that, to conform to the expected InputRange interface, this must keep a
-copy of the last generated value in memory. For security purposes, it may
-occasionally be appropriate to make an extra popFront() call before and/or
-after retreiving entropy values. This may decrease the chance of using
-a compromized entropy value in the event of a memory-sniffing attacker.
-+/
-struct WrappedStreamRNG(RandomStream, StaticUByteArr)
-	if(isRandomStream!RandomStream && isStaticArray!StaticUByteArr && is(ElementType!StaticUByteArr==ubyte))
-{
-	enum isUniformRandom = true; /// Mark this as a Rng
-	
-	private StaticUByteArr _front;
-	private bool inited = false;
-	private static RandomStream stream;
-	
-	/// Implements an InputRange
-	@property StaticUByteArr front()
-	{
-		if(!inited)
-		{
-			popFront();
-			inited = true;
-		}
-		
-		return _front;
-	}
-	
-	///ditto
-	void popFront()
-	{
-		stream.read(_front);
-	}
-	
-	/// Infinite range. Never empty.
-	enum empty = false;
-	
-	/// Smallest generated value.
-	enum min = StaticUByteArr.init;
-	
-	/// Largest generated value.
-	static @property StaticUByteArr max()
-	{
-		StaticUByteArr val = void;
-		val[] = 0xFF;
-		return val;
-	}
-}
-
-///ditto
-struct WrappedStreamRNG(RandomStream, UIntType)
-	if(isRandomStream!RandomStream && isUnsigned!UIntType)
-{
-	private WrappedStreamRNG!(RandomStream, ubyte[UIntType.sizeof]) bytesImpl;
-	
-	enum isUniformRandom = true; /// Mark this as a Rng
-	
-	private UIntType _front;
-	private bool inited = false;
-	
-	/// Implements an InputRange
-	@property UIntType front()
-	{
-		auto val = bytesImpl.front;
-		return *(cast(UIntType*) &val);
-	}
-	
-	///ditto
-	void popFront()
-	{
-		bytesImpl.popFront();
-	}
-	
-	enum empty = false; /// Infinite range. Never empty.
-	enum min = UIntType.min; /// Smallest generated value.
-	enum max = UIntType.max; /// Largest generated value.
-}
-
 /// A convenience alias to create a UniformRNG from SystemEntropyStream.
 /// See the WrappedStreamRNG documentation for important information.
 alias SystemEntropy(Elem) = WrappedStreamRNG!(SystemEntropyStream, Elem);
@@ -439,44 +358,26 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG")
 ///ditto
 alias HashDRBGStream(string custom) = HashDRBGStream!(SHA512, custom);
 
-version(DAuth_Unittest)
-unittest
+/// A convenience template to create a UniformRNG from HashDRBGStream.
+/// See the WrappedStreamRNG documentation for important information.
+template HashDRBG(Elem, TSHA = SHA512, string custom = "D Crypto RNG")
+	if(isInstanceOf!(SHA, TSHA))
 {
-	alias RandStreamTypes = TypeTuple!(
-		SystemEntropyStream,
-		HashDRBGStream!SHA1,
-		HashDRBGStream!SHA224,
-		HashDRBGStream!SHA256,
-		HashDRBGStream!SHA384,
-		HashDRBGStream!SHA512,
-		HashDRBGStream!SHA512_224,
-		HashDRBGStream!SHA512_256,
-		HashDRBGStream!(SHA512, "other custom str"),
-	);
-	
-	unitlog("Testing SystemEntropyStream/HashDRBGStream");
-	foreach(RandStream; RandStreamTypes)
-	{
-		//unitlog("Testing RandStream: "~RandStream.stringof);
-		
-		RandStream rand;
-		ubyte[] values1;
-		ubyte[] values2;
-		values1.length = 10;
-		values2.length = 10;
-		
-		rand.read(values1);
-		assert(values1 != typeof(values1).init);
-		assert(values1[0..4] != values1[4..8]);
-		rand.read(values2);
-		assert(values1 != values2);
-		
-		auto randCopy = rand;
-		rand.read(values1);
-		randCopy.read(values2);
-		assert(values1 != values2);
-	}
+	alias HashDRBG = WrappedStreamRNG!(HashDRBGStream!(TSHA, custom), Elem);
 }
+
+///ditto
+alias HashDRBG(StaticUByteArr, string custom) = HashDRBG!(StaticUByteArr, SHA512, custom);
+
+static assert(isUniformRNG!(HashDRBG!(ubyte[1]), ubyte[1]));
+static assert(isUniformRNG!(HashDRBG!(ubyte[5]), ubyte[5]));
+static assert(isUniformRNG!(HashDRBG!ubyte,      ubyte   ));
+static assert(isUniformRNG!(HashDRBG!ushort,     ushort  ));
+static assert(isUniformRNG!(HashDRBG!uint,       uint    ));
+static assert(isUniformRNG!(HashDRBG!ulong,      ulong   ));
+static assert(isUniformRNG!(HashDRBG!(uint), uint));
+static assert(isUniformRNG!(HashDRBG!(uint, "custom"), uint));
+static assert(isUniformRNG!(HashDRBG!(uint, SHA256, "custom"), uint));
 
 version(DAuth_Unittest)
 unittest
@@ -524,62 +425,125 @@ unittest
 	assert(result == expected);
 }
 
-/// A convenience template to create a UniformRNG from HashDRBGStream.
-/// See the WrappedStreamRNG documentation for important information.
-template HashDRBG(Elem, TSHA = SHA512, string custom = "D Crypto RNG")
-	if(isInstanceOf!(SHA, TSHA))
+/++
+Takes a RandomStream (ex: SystemEntropyStream or HashDRBGStream) and
+wraps it into a UniformRNG InputRange.
+
+Note that, to conform to the expected InputRange interface, this must keep a
+copy of the last generated value in memory. For security purposes, it may
+occasionally be appropriate to make an extra popFront() call before and/or
+after retreiving entropy values. This may decrease the chance of using
+a compromized entropy value in the event of a memory-sniffing attacker.
++/
+struct WrappedStreamRNG(RandomStream, StaticUByteArr)
+	if(isRandomStream!RandomStream && isStaticArray!StaticUByteArr && is(ElementType!StaticUByteArr==ubyte))
 {
-	alias HashDRBG = WrappedStreamRNG!(HashDRBGStream!(TSHA, custom), Elem);
+	enum isUniformRandom = true; /// Mark this as a Rng
+	
+	private StaticUByteArr _front;
+	private bool inited = false;
+	private static RandomStream stream;
+	
+	/// Implements an InputRange
+	@property StaticUByteArr front()
+	{
+		if(!inited)
+		{
+			popFront();
+			inited = true;
+		}
+		
+		return _front;
+	}
+	
+	///ditto
+	void popFront()
+	{
+		stream.read(_front);
+	}
+	
+	/// Infinite range. Never empty.
+	enum empty = false;
+	
+	/// Smallest generated value.
+	enum min = StaticUByteArr.init;
+	
+	/// Largest generated value.
+	static @property StaticUByteArr max()
+	{
+		StaticUByteArr val = void;
+		val[] = 0xFF;
+		return val;
+	}
 }
 
 ///ditto
-alias HashDRBG(StaticUByteArr, string custom) = HashDRBG!(StaticUByteArr, SHA512, custom);
-
-static assert(isUniformRNG!(HashDRBG!(ubyte[1]), ubyte[1]));
-static assert(isUniformRNG!(HashDRBG!(ubyte[5]), ubyte[5]));
-static assert(isUniformRNG!(HashDRBG!ubyte,      ubyte   ));
-static assert(isUniformRNG!(HashDRBG!ushort,     ushort  ));
-static assert(isUniformRNG!(HashDRBG!uint,       uint    ));
-static assert(isUniformRNG!(HashDRBG!ulong,      ulong   ));
-static assert(isUniformRNG!(HashDRBG!(uint), uint));
-static assert(isUniformRNG!(HashDRBG!(uint, "custom"), uint));
-static assert(isUniformRNG!(HashDRBG!(uint, SHA256, "custom"), uint));
+struct WrappedStreamRNG(RandomStream, UIntType)
+	if(isRandomStream!RandomStream && isUnsigned!UIntType)
+{
+	private WrappedStreamRNG!(RandomStream, ubyte[UIntType.sizeof]) bytesImpl;
+	
+	enum isUniformRandom = true; /// Mark this as a Rng
+	
+	private UIntType _front;
+	private bool inited = false;
+	
+	/// Implements an InputRange
+	@property UIntType front()
+	{
+		auto val = bytesImpl.front;
+		return *(cast(UIntType*) &val);
+	}
+	
+	///ditto
+	void popFront()
+	{
+		bytesImpl.popFront();
+	}
+	
+	enum empty = false; /// Infinite range. Never empty.
+	enum min = UIntType.min; /// Smallest generated value.
+	enum max = UIntType.max; /// Largest generated value.
+}
 
 version(DAuth_Unittest)
 unittest
 {
-	unitlog("Testing SystemEntropy");
-
-	assert(SystemEntropy!(ubyte[1]).min == [0x00]);
-	assert(SystemEntropy!(ubyte[1]).max == [0xFF]);
-	assert(SystemEntropy!(ubyte[5]).min == [0x00,0x00,0x00,0x00,0x00]);
-	assert(SystemEntropy!(ubyte[5]).max == [0xFF,0xFF,0xFF,0xFF,0xFF]);
-	assert(SystemEntropy!(ubyte   ).min == ubyte .min);
-	assert(SystemEntropy!(ubyte   ).max == ubyte .max);
-	assert(SystemEntropy!(ushort  ).min == ushort.min);
-	assert(SystemEntropy!(ushort  ).max == ushort.max);
-	assert(SystemEntropy!(uint    ).min == uint  .min);
-	assert(SystemEntropy!(uint    ).max == uint  .max);
-	assert(SystemEntropy!(ulong   ).min == ulong .min);
-	assert(SystemEntropy!(ulong   ).max == ulong .max);
-
-	SystemEntropy!ulong entropy;
-	assert(!entropy.empty);
+	alias RandStreamTypes = TypeTuple!(
+		SystemEntropyStream,
+		HashDRBGStream!SHA1,
+		HashDRBGStream!SHA224,
+		HashDRBGStream!SHA256,
+		HashDRBGStream!SHA384,
+		HashDRBGStream!SHA512,
+		HashDRBGStream!SHA512_224,
+		HashDRBGStream!SHA512_256,
+		HashDRBGStream!(SHA512, "other custom str"),
+	);
 	
-	assert(entropy.front == entropy.front);
-	auto val = entropy.front;
-	assert(val != ulong.init);
-
-	entropy.popFront();
-	assert(val != entropy.front);
-	
-	auto entropyCopy = entropy;
-	assert(entropy.front == entropyCopy.front);
-	entropy.popFront();
-	entropyCopy.popFront();
-	assert(entropy.front != entropyCopy.front);
+	unitlog("Testing SystemEntropyStream/HashDRBGStream");
+	foreach(RandStream; RandStreamTypes)
+	{
+		//unitlog("Testing RandStream: "~RandStream.stringof);
+		
+		RandStream rand;
+		ubyte[] values1;
+		ubyte[] values2;
+		values1.length = 10;
+		values2.length = 10;
+		
+		rand.read(values1);
+		assert(values1 != typeof(values1).init);
+		assert(values1[0..4] != values1[4..8]);
+		rand.read(values2);
+		assert(values1 != values2);
+		
+		auto randCopy = rand;
+		rand.read(values1);
+		randCopy.read(values2);
+		assert(values1 != values2);
+	}
 }
-
 
 version(DAuth_Unittest)
 unittest
@@ -601,9 +565,18 @@ unittest
 		assert(Rand!(ulong   ).min == ulong .min);
 		assert(Rand!(ulong   ).max == ulong .max);
 	}
+}
 
+version(DAuth_Unittest)
+unittest
+{
 	alias RandTypes = TypeTuple!(
 		SystemEntropy!ulong,
+		SystemEntropy!ubyte,
+		SystemEntropy!ushort,
+		SystemEntropy!uint,
+		SystemEntropy!(ubyte[5]),
+		SystemEntropy!(ubyte[1024]),
 		HashDRBG!(ulong, SHA1),
 		HashDRBG!(ulong, SHA224),
 		HashDRBG!(ulong, SHA256),
