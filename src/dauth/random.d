@@ -49,9 +49,9 @@ enum defaultTokenStrength = 36;
 
 /// RNGs used with DAuth must be either a isRandomStream, or
 /// a isUniformRNG input range that emits uint values.
-template isDAuthRandom(T) =
+enum isDAuthRandom(T) =
 	isRandomStream!T ||
-	(isUniformRNG!T && is(ElemenType!T == uint));
+	(isUniformRNG!T && is(ElementType!T == uint));
 
 /++
 Generates a random password.
