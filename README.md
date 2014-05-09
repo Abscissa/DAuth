@@ -13,6 +13,8 @@ The library also provides a forward-compatible string-based hash format for easy
 
 Note: DAuth does not directly provide any encryption, hashing, or random number generating algorithms. It leaves this up to other libraries, relying on the [Phobos](http://dlang.org/phobos/index.html)-defined protocols for [digests](http://dlang.org/phobos/std_digest_digest.html) and [random number generators](http://dlang.org/phobos/std_random.html). Phobos includes some such algorithms already. Although bear in mind that, as of DMD v2.065, it lacks any algorithms that are currently considered cryptographically-secure for salted password hashing (but it does include SHA1, which is nonetheless still widely used for password hashing).
 
+[DAuth Changelog](https://github.com/Abscissa/DAuth/blob/master/CHANGELOG.md)
+
 Typical Usage
 -------------
 See also: [API Reference](http://semitwist.com/dauth/)
