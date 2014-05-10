@@ -505,7 +505,9 @@ struct WrappedStreamRNG(RandomStream, StaticUByteArr)
 	
 	private StaticUByteArr _front;
 	private bool inited = false;
-	private static RandomStream stream;
+	
+	/// Access to underlying RandomStream so RNG-specific functionality can be accessed.
+	RandomStream stream;
 	
 	/// Implements an InputRange
 	@property StaticUByteArr front()
