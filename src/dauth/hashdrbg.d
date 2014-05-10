@@ -209,6 +209,30 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG")
 	// but we should take care not to overflow our actual countner.
 	private enum int maxGenerated = 0x0FFF_FFFF;
 	
+	/++
+	Set to Yes.PredictionResistance for additional protection against
+	prediction attacks by forcing a reseed with fresh entropy for each call
+	to read(). Reset back to No.PredictionResistance afterwords for faster,
+	but still cryptographically-secure, operation when you're done with
+	extra-elevated security needs.
+
+	Default is No.PredictionResistance.
+	
+	This setting is for changing read()'s default bahavior. Individual calls to
+	read() can manually override this per call.
+	+/
+	Flag!"PredictionResistance" predictionResistance = No.PredictionResistance;
+
+	/++
+	Further improve	security by setting Hash_DRBG's optional "additional input"
+	for each call to read(). This can be set to a new value before each read()
+	call for maximum effect.
+
+	This setting is for changing read()'s default bahavior. Individual calls to
+	read() can manually override this per call.
+	+/
+	ubyte[] extraInput = null;
+
 	private static bool inited = false;
 	private void init()
 	{
@@ -252,25 +276,44 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG")
 	/++
 	Fills the buffer with random values using the Hash_DRBG algorithm.
 	
-	predictionResistance:
-	Set to Yes.PredictionResistance for additional protection against
-	prediction attacks by forcing a reseed with fresh entropy.
-	Default is No.PredictionResistance.
+	overridePredictionResistance:
+	Override this.predictionResistance setting for this call only.
+	
+	overrideExtraInput:
+	Override this.extraInput setting for this call only.
 	+/
-	void read(ubyte[] buf,
-		Flag!"PredictionResistance" predictionResistance = No.PredictionResistance,
-		ubyte[] extraInput = null)
+	void read(ubyte[] buf)
 	{
-		if(numGenerated >= maxGenerated || predictionResistance == Yes.PredictionResistance)
-			reseed(extraInput);
+		read(buf, predictionResistance, extraInput);
+	}
+
+	///ditto
+	void read(ubyte[] buf, ubyte[] overrideExtraInput)
+	{
+		read(buf, predictionResistance, overrideExtraInput);
+	}
+
+	///ditto
+	void read(ubyte[] buf, Flag!"PredictionResistance" overridePredictionResistance)
+	{
+		read(buf, overridePredictionResistance, extraInput);
+	}
+
+	///ditto
+	void read(ubyte[] buf,
+		Flag!"PredictionResistance" overridePredictionResistance,
+		ubyte[] overrideExtraInput)
+	{
+		if(numGenerated >= maxGenerated || overridePredictionResistance == Yes.PredictionResistance)
+			reseed(overrideExtraInput);
 		
-		if(extraInput)
+		if(overrideExtraInput)
 		{
 			value[0] = 0x02;
 
 			TSHA sha;
 			sha.put(value);
-			sha.put(extraInput);
+			sha.put(overrideExtraInput);
 			ubyte[seedSizeBytes] tempHash;
 			tempHash[0..outputSizeBits/8] = sha.finish();
 			addHash!seedSizeBytes(value[1..$], tempHash, value[1..$]);
@@ -303,12 +346,6 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG")
 		addHash!seedSizeBytes(hashSum, numGenerated+1, value[1..$]);
 		
 		numGenerated++;
-	}
-
-	///ditto
-	void read(ubyte[] buf, ubyte[] extraInput)
-	{
-		read(buf, No.PredictionResistance, extraInput);
 	}
 	
 	private static void hashDerivation(ubyte[] input, ubyte[] extraInput, ubyte[] buf)
