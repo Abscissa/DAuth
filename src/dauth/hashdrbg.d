@@ -418,10 +418,6 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 	}
 }
 
-///ditto
-alias HashDRBGStream(string custom, EntropyStream = SystemEntropyStream) =
-	HashDRBGStream!(SHA512, custom, EntropyStream);
-
 /// A convenience template to create a UniformRNG from HashDRBGStream.
 /// See the WrappedStreamRNG documentation for important information.
 template HashDRBG(Elem, TSHA = SHA512, string custom = "D Crypto RNG", EntropyStream = SystemEntropyStream)
@@ -430,10 +426,6 @@ template HashDRBG(Elem, TSHA = SHA512, string custom = "D Crypto RNG", EntropySt
 	alias HashDRBG = WrappedStreamRNG!(HashDRBGStream!(TSHA, custom, EntropyStream), Elem);
 }
 
-///ditto
-alias HashDRBG(StaticUByteArr, string custom, EntropyStream = SystemEntropyStream) =
-	HashDRBG!(StaticUByteArr, SHA512, custom, EntropyStream);
-
 static assert(isUniformRNG!(HashDRBG!(ubyte[1]), ubyte[1]));
 static assert(isUniformRNG!(HashDRBG!(ubyte[5]), ubyte[5]));
 static assert(isUniformRNG!(HashDRBG!ubyte,      ubyte   ));
@@ -441,10 +433,9 @@ static assert(isUniformRNG!(HashDRBG!ushort,     ushort  ));
 static assert(isUniformRNG!(HashDRBG!uint,       uint    ));
 static assert(isUniformRNG!(HashDRBG!ulong,      ulong   ));
 static assert(isUniformRNG!(HashDRBG!(uint), uint));
-static assert(isUniformRNG!(HashDRBG!(uint, "custom"), uint));
+static assert(isUniformRNG!(HashDRBG!(uint, SHA256), uint));
 static assert(isUniformRNG!(HashDRBG!(uint, SHA256, "custom"), uint));
 static assert(isUniformRNG!(HashDRBG!(uint, SHA256, "custom", SystemEntropyStream), uint));
-static assert(isUniformRNG!(HashDRBG!(uint, "custom", SystemEntropyStream), uint));
 
 version(DAuth_Unittest)
 unittest
