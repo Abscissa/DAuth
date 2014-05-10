@@ -176,7 +176,7 @@ TSHA: Any SHA-1 or SHA-2 digest type. Default is SHA512.
 custom: Hash_DRBG's personalization string. You can optionally set this to any
 specific value of your own choosing for improved security.
 +/
-struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG")
+struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStream = SystemEntropyStream)
 	if(isInstanceOf!(SHA, TSHA))
 {
 	enum isUniformRandomStream = true; /// Mark this as a Rng Stream
@@ -241,7 +241,7 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG")
 		
 		// seedMaterial = entropy ~ nonce ~ custom;
 		ubyte[entropySizeBytes + nonceSizeBytes + custom.length] seedMaterial = void;
-		SystemEntropyStream.read( seedMaterial[0 .. $-custom.length] );
+		EntropyStream.read( seedMaterial[0 .. $-custom.length] );
 		seedMaterial[$-custom.length .. $] = cast(ubyte[])custom;
 		
 		// Generate seed for V
@@ -261,7 +261,7 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG")
 		ubyte[value.sizeof + entropySizeBytes] seedMaterial = void;
 		seedMaterial[0] = 0x01;
 		seedMaterial[1 .. $-entropySizeBytes] = value[1..$];
-		SystemEntropyStream.read( seedMaterial[$-entropySizeBytes .. $] );
+		EntropyStream.read( seedMaterial[$-entropySizeBytes .. $] );
 		
 		// Generate seed for V
 		hashDerivation(seedMaterial, extraInput, value[1..$]);
@@ -419,18 +419,20 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG")
 }
 
 ///ditto
-alias HashDRBGStream(string custom) = HashDRBGStream!(SHA512, custom);
+alias HashDRBGStream(string custom, EntropyStream = SystemEntropyStream) =
+	HashDRBGStream!(SHA512, custom, EntropyStream);
 
 /// A convenience template to create a UniformRNG from HashDRBGStream.
 /// See the WrappedStreamRNG documentation for important information.
-template HashDRBG(Elem, TSHA = SHA512, string custom = "D Crypto RNG")
+template HashDRBG(Elem, TSHA = SHA512, string custom = "D Crypto RNG", EntropyStream = SystemEntropyStream)
 	if(isInstanceOf!(SHA, TSHA))
 {
-	alias HashDRBG = WrappedStreamRNG!(HashDRBGStream!(TSHA, custom), Elem);
+	alias HashDRBG = WrappedStreamRNG!(HashDRBGStream!(TSHA, custom, EntropyStream), Elem);
 }
 
 ///ditto
-alias HashDRBG(StaticUByteArr, string custom) = HashDRBG!(StaticUByteArr, SHA512, custom);
+alias HashDRBG(StaticUByteArr, string custom, EntropyStream = SystemEntropyStream) =
+	HashDRBG!(StaticUByteArr, SHA512, custom, EntropyStream);
 
 static assert(isUniformRNG!(HashDRBG!(ubyte[1]), ubyte[1]));
 static assert(isUniformRNG!(HashDRBG!(ubyte[5]), ubyte[5]));
@@ -441,6 +443,8 @@ static assert(isUniformRNG!(HashDRBG!ulong,      ulong   ));
 static assert(isUniformRNG!(HashDRBG!(uint), uint));
 static assert(isUniformRNG!(HashDRBG!(uint, "custom"), uint));
 static assert(isUniformRNG!(HashDRBG!(uint, SHA256, "custom"), uint));
+static assert(isUniformRNG!(HashDRBG!(uint, SHA256, "custom", SystemEntropyStream), uint));
+static assert(isUniformRNG!(HashDRBG!(uint, "custom", SystemEntropyStream), uint));
 
 version(DAuth_Unittest)
 unittest
