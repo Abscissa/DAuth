@@ -257,7 +257,7 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG")
 	
 	private void reseed(ubyte[] extraInput=null)
 	{
-		// seedMaterial = 0x01 ~ V ~ entropy; (Omit optional "additional_input")
+		// seedMaterial = 0x01 ~ V ~ entropy;
 		ubyte[value.sizeof + entropySizeBytes] seedMaterial = void;
 		seedMaterial[0] = 0x01;
 		seedMaterial[1 .. $-entropySizeBytes] = value[1..$];
