@@ -1,2 +1,2 @@
 #!/bin/sh
-rdmd -unittest -version=InstaUser_Unittest -Isrc -main --force "$@" src/instauser.d
+rdmd -unittest -version=InstaUser_Unittest -Isrc -main --force "$@" src/instauser/package.d
