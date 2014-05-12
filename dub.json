@@ -1,0 +1,13 @@
+{
+	"name": "instauser",
+	"description": "User account library",
+	"authors": ["Nick Sabalausky"],
+	"homepage": "https://github.com/abscissa/InstaUser",
+	"license": "zlib/libpng",
+	"sourcePaths": "src",
+	"importPaths": "src",
+	"dependencies": {
+		"dauth": "~master",
+		"mysql-native": { "version": "~master", "optional": true }
+	}
+}
