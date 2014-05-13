@@ -187,8 +187,11 @@ private void validateStrength(Digest digest)
 	}
 }
 
-/// Thrown when the provided (or default) 'digestCodeOfObj' or 'digestFromCode'
-/// delegates fail to find a match.
+/// Thrown whenever a digest type cannot be determined.
+/// For example, when the provided (or default) 'digestCodeOfObj' or 'digestFromCode'
+/// delegates fail to find a match. Or when passing isPasswordCorrect a
+/// Hash!Digest with a null 'digest' member (which prevents it from determining
+/// the correct digest to match with).
 class UnknownDigestException : Exception
 {
 	this(string msg) { super(msg); }
@@ -479,6 +482,9 @@ There is no cryptographic benefit to combining the salt and password any
 other way. However, if you need to support an alternate method for
 compatibility purposes, you can do so by providing a custom salter delegate.
 See the implementation of DAuth's defaultSalter to see how to do this.
+
+If using an OO-style Digest, then digest MUST be non-null. Otherwise,
+an UnknownDigestException will be thrown.
 +/
 Hash!TDigest makeHash(TDigest = DefaultDigest)
 	(Password password, Salt salt = randomSalt(), Salter!TDigest salter = toDelegate(&defaultSalter!TDigest))
@@ -502,6 +508,7 @@ Hash!TDigest makeHash(TDigest = DefaultDigest)(Password password, Salter!TDigest
 Hash!Digest makeHash()(Digest digest, Password password, Salt salt = randomSalt(),
 	Salter!Digest salter = toDelegate(&defaultSalter!Digest))
 {
+	enforce(digest, new UnknownDigestException("digest was null, don't know what digest to use"));
 	validateStrength(digest);
 	return makeHashImpl!Digest(digest, password, salt, salter);
 }
@@ -509,6 +516,7 @@ Hash!Digest makeHash()(Digest digest, Password password, Salt salt = randomSalt(
 ///ditto
 Hash!Digest makeHash()(Digest digest, Password password, Salter!Digest salter)
 {
+	enforce(digest, new UnknownDigestException("digest was null, don't know what digest to use"));
 	validateStrength(digest);
 	return makeHashImpl!Digest(digest, password, randomSalt(), salter);
 }
@@ -602,11 +610,35 @@ Hash!Digest parseHash(string str,
 }
 
 /// Validates a password against an existing salted hash.
+///
+/// If sHash is a Hash!Digest, then sHash.digest MUST be non-null. Otherwise
+/// this function will have no other way to determine what digest to match
+/// against, and an UnknownDigestException will be thrown.
 bool isPasswordCorrect(TDigest = DefaultDigest)(Password password, Hash!TDigest sHash,
 	Salter!TDigest salter = toDelegate(&defaultSalter!TDigest))
-	if(isAnyDigest!TDigest)
+	if(isDigest!TDigest)
 {
 	auto testHash = makeHash!TDigest(password, sHash.salt, salter);
+	return lengthConstantEquals(testHash.hash, sHash.hash);
+}
+
+///ditto
+bool isPasswordCorrect(TDigest = Digest)(Password password, Hash!TDigest sHash,
+	Salter!Digest salter = toDelegate(&defaultSalter!Digest))
+	if(is(TDigest : Digest))
+{
+	Hash!Digest testHash;
+
+	if(sHash.digest)
+		testHash = makeHash(sHash.digest, password, sHash.salt, salter);
+	else
+	{
+		static if(is(TDigest == Digest))
+			throw new UnknownDigestException("Cannot determine digest from a Hash!Digest with a null 'digest' member.");
+		else
+			testHash = makeHash(new TDigest(), password, sHash.salt, salter);
+	}
+
 	return lengthConstantEquals(testHash.hash, sHash.hash);
 }
 
@@ -722,6 +754,9 @@ unittest
 	assert(result2_512.salt       == result2_512AltSalter.salt);
 	assert(result2_512.hash       != result2_512AltSalter.hash);
 	assert(result2_512.toString() != result2_512AltSalter.toString());
+	
+	assertThrown!UnknownDigestException( makeHash(cast(SHA1Digest)null, plainText1, cast(Salt)sha1Hash2[]) );
+	assertThrown!UnknownDigestException( makeHash(cast(Digest)null,     plainText1, cast(Salt)sha1Hash2[]) );
 
 	unitlog("Testing makeHash(pass)");
 	import dauth.random : randomPassword;
@@ -738,6 +773,8 @@ unittest
 	assert(result2.salt       == result2Parsed.salt);
 	assert(result2.hash       == result2Parsed.hash);
 	assert(result2.toString() == result2Parsed.toString());
+
+	assert(makeHash(result2Parsed.digest, plainText1, result2Parsed.salt) == result2Parsed);
 	
 	unitlog("Testing isPasswordCorrect");
 	assert(isPasswordCorrect     (plainText1, result2));
@@ -755,6 +792,24 @@ unittest
 	assert(!isPasswordCorrect!SHA1(dupPassword("bad pass"), result2AltSalter, &altSalter!SHA1));
 	assert(!isPasswordCorrect!SHA1(dupPassword("bad pass"), result2AltSalter.hash, result2AltSalter.salt, &altSalter!SHA1));
 	assert(!isPasswordCorrect     (dupPassword("bad pass"), result2AltSalter.hash, result2AltSalter.salt, new SHA1Digest(), &altSalter!Digest));
+	
+	Hash!SHA1Digest ooHashSHA1Digest;
+	ooHashSHA1Digest.salt = result2.salt;
+	ooHashSHA1Digest.hash = result2.hash;
+	ooHashSHA1Digest.digest = new SHA1Digest();
+	assert( isPasswordCorrect(plainText1, ooHashSHA1Digest) );
+	ooHashSHA1Digest.digest = null;
+	assert( isPasswordCorrect(plainText1, ooHashSHA1Digest) );
+	
+	Hash!Digest ooHashDigest;
+	ooHashDigest.salt = result2.salt;
+	ooHashDigest.hash = result2.hash;
+	ooHashDigest.digest = new SHA1Digest();
+	assert( isPasswordCorrect(plainText1, ooHashDigest) );
+	ooHashDigest.digest = null;
+	assertThrown!UnknownDigestException( isPasswordCorrect(plainText1, ooHashDigest) );
+	
+	assert( isPasswordCorrect(plainText1, parseHash(result2.toString())) );
 
 	auto wrongSalt = result2;
 	wrongSalt.salt = wrongSalt.salt[4..$-1];

@@ -13,6 +13,7 @@ v0.6.0 - TBD - SHA-2, Hash_DRBG, Separate Modules
 - **Change:** Change callbacks from function to delegate.
 - **Change:** Split DAuth into separate modules (maintaining support for ```import dauth;``` via package.d).
 - **Fixed:** Blindly accepted (unsupported) non-uint random number ranges instead of rejecting them with constraints.
+- **Fixed:** Calling ```isPasswordCorrect(Password, Hash!Digest)``` fails with ugly compile error.
 
 v0.5.1 - 2014/04/06
 -------------------
