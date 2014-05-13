@@ -13,10 +13,10 @@ Uses $(LINK2 https://github.com/abscissa/DAuth,DAuth)
 Author: Nick Sabalausky
 
 DMD flags to enable InstaUser unittests:
-	-unittest -version=InstaUser_Unittest
+	-unittest -version=InstaUser_Unittest -version=Have_mysqln
 
 DMD flags to enable InstaUser unittests, but silence all non-error output:
-	-unittest -version=InstaUser_Unittest -version=InstaUser_Unittest_Quiet
+	-unittest -version=InstaUser_Unittest -version=Have_mysqln -version=InstaUser_Unittest_Quiet
 +/
 
 module instauser;

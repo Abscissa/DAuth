@@ -11,10 +11,12 @@ import std.exception;
 import dauth.core;
 import instauser.core;
 
+///
 class MemoryStore
 {
 	private shared string[string] lookup; // lookup[name] == salted hash string
 	
+	///
 	bool create(TDigest)(string name, Hash!TDigest hash) if(isAnyDigest!TDigest)
 	{
 		if(name in lookup)
@@ -24,6 +26,7 @@ class MemoryStore
 		return true;
 	}
 	
+	///
 	bool modify(TDigest)(string name, Hash!TDigest hash) if(isAnyDigest!TDigest)
 	{
 		if(auto pHash = name in lookup)
@@ -35,6 +38,7 @@ class MemoryStore
 		return false;
 	}
 	
+	///
 	NullableHash!Digest getHash(string name)
 	{
 		if(auto pHash = name in lookup)
@@ -43,6 +47,7 @@ class MemoryStore
 		return NullableHash!Digest();
 	}
 	
+	///
 	bool remove(string name)
 	{
 		if(name !in lookup)
@@ -53,12 +58,12 @@ class MemoryStore
 	}
 }
 
-static assert(isUserStore!MemoryStore);
-
 version(InstaUser_Unittest)
 unittest
 {
 	unitlog("Testing MemoryStore");
+
+	static assert(isUserStore!MemoryStore);
 	
 	auto store = new MemoryStore();
 	assert(store.lookup.length == 0);
