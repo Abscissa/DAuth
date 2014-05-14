@@ -83,60 +83,64 @@ unittest
 	unitlog("Testing MemoryStore");
 
 	static assert(isUserStore!MemoryStore);
+	static assert(hasGetUserCount!MemoryStore);
 	
 	auto store = new MemoryStore();
 	assert( store.getUserCount() == 0 );
-	assertNotThrown( store.wipeEverythingAndInit() );
-	assert( store.getUserCount() == 0 );
 	
-	assertNotThrown( store.wipeEverythingAndInit() );
-	assert( store.getUserCount() == 0 );
+	auto instaUser = InstaUser!MemoryStore(store);
+	assert( instaUser.getUserCount() == 0 );
+	assertNotThrown( instaUser.wipeEverythingAndInit() );
+	assert( instaUser.getUserCount() == 0 );
 	
-	assertNotThrown!UserAlreadyExistsException( store.createUser("Mo",  dupPassword("stuffjunk")) );
-	assertNotThrown!UserAlreadyExistsException( store.createUser("Joe", dupPassword("pass123"  )) );
-	assertNotThrown!UserAlreadyExistsException( store.createUser("Cho", dupPassword("test pass")) );
+	assertNotThrown( instaUser.wipeEverythingAndInit() );
+	assert( instaUser.getUserCount() == 0 );
+	
+	assertNotThrown!UserAlreadyExistsException( instaUser.createUser("Mo",  dupPassword("stuffjunk")) );
+	assertNotThrown!UserAlreadyExistsException( instaUser.createUser("Joe", dupPassword("pass123"  )) );
+	assertNotThrown!UserAlreadyExistsException( instaUser.createUser("Cho", dupPassword("test pass")) );
 
-	assert( store.getUserCount() == 3 );
-	assert( store.userExists("Mo")  );
-	assert( store.userExists("Joe") );
-	assert( store.userExists("Cho") );
-	assert( !store.userExists("Herman") );
-	assert( !store.userExists("") );
+	assert( instaUser.getUserCount() == 3 );
+	assert( instaUser.userExists("Mo")  );
+	assert( instaUser.userExists("Joe") );
+	assert( instaUser.userExists("Cho") );
+	assert( !instaUser.userExists("Herman") );
+	assert( !instaUser.userExists("") );
 	
-	assertNotThrown!UserNotFoundException( store.removeUser("Mo") );
+	assertNotThrown!UserNotFoundException( instaUser.removeUser("Mo") );
 
-	assert( store.getUserCount() == 2 );
-	assert( !store.userExists("Mo") );
-	assert( store.userExists("Joe") );
-	assert( store.userExists("Cho") );
+	assert( instaUser.getUserCount() == 2 );
+	assert( !instaUser.userExists("Mo") );
+	assert( instaUser.userExists("Joe") );
+	assert( instaUser.userExists("Cho") );
 	
-	assertThrown!UserNotFoundException( store.removeUser("Mo") );
-	assertThrown!UserNotFoundException( store.removeUser("Herman") );
+	assertThrown!UserNotFoundException( instaUser.removeUser("Mo") );
+	assertThrown!UserNotFoundException( instaUser.removeUser("Herman") );
 
-	assert( store.getUserCount() == 2 );
-	assert( !store.userExists("Mo") );
-	assert( store.userExists("Joe") );
-	assert( store.userExists("Cho") );
+	assert( instaUser.getUserCount() == 2 );
+	assert( !instaUser.userExists("Mo") );
+	assert( instaUser.userExists("Joe") );
+	assert( instaUser.userExists("Cho") );
 	
-	assert( store.validateUser ("Joe",    dupPassword("pass123")) );
-	assert( !store.validateUser("Cho",    dupPassword("pass123")) );
-	assert( !store.validateUser("Herman", dupPassword("pass123")) );
+	assert( instaUser.validateUser ("Joe",    dupPassword("pass123")) );
+	assert( !instaUser.validateUser("Cho",    dupPassword("pass123")) );
+	assert( !instaUser.validateUser("Herman", dupPassword("pass123")) );
 
-	assert( !store.validateUser("Joe",    dupPassword("test pass")) );
-	assert( store.validateUser ("Cho",    dupPassword("test pass")) );
-	assert( !store.validateUser("Herman", dupPassword("test pass")) );
+	assert( !instaUser.validateUser("Joe",    dupPassword("test pass")) );
+	assert( instaUser.validateUser ("Cho",    dupPassword("test pass")) );
+	assert( !instaUser.validateUser("Herman", dupPassword("test pass")) );
 	
-	assertNotThrown!UserNotFoundException( store.modifyUser("Cho", dupPassword("pass123")) );
-	assert( store.validateUser ("Cho", dupPassword("pass123"  )) );
-	assert( !store.validateUser("Cho", dupPassword("test pass")) );
+	assertNotThrown!UserNotFoundException( instaUser.modifyUser("Cho", dupPassword("pass123")) );
+	assert( instaUser.validateUser ("Cho", dupPassword("pass123"  )) );
+	assert( !instaUser.validateUser("Cho", dupPassword("test pass")) );
 	
-	assert( store.getHash("Joe").toString() != store.getHash("Cho").toString() );
+	assert( instaUser.store.getHash("Joe").toString() != instaUser.store.getHash("Cho").toString() );
 
-	assert( store.getUserCount() == 2 );
-	assertNotThrown( store.wipeEverythingAndInit() );
-	assert( store.getUserCount() == 0 );
-	assertNotThrown( store.wipeEverything() );
+	assert( instaUser.getUserCount() == 2 );
+	assertNotThrown( instaUser.wipeEverythingAndInit() );
+	assert( instaUser.getUserCount() == 0 );
+	assertNotThrown( instaUser.store.wipeEverything() );
 	
 	// Should not fail even if already wiped
-	assertNotThrown( store.wipeEverything() );
+	assertNotThrown( instaUser.store.wipeEverything() );
 }

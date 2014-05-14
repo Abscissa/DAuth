@@ -60,7 +60,7 @@ static assert(!isUserStore!Object);
 
 ///
 enum hasGetUserCount(T) = is(typeof((){
-	T.t;
+	T t;
 	ulong x = t.getUserCount();
 }));
 
@@ -86,73 +86,80 @@ class UserNotFoundException : Exception
 }
 
 ///
-void createUser(Store, TDigest = DefaultDigest)
-	(Store store, string name, Password pass)
-	if(isUserStore!(Store, TDigest))
+struct InstaUser(Store)
 {
-	if(!store.create(name, makeHash(pass)))
-		throw new UserAlreadyExistsException(name);
-}
-
-///
-void modifyUser(Store, TDigest = DefaultDigest)
-	(Store store, string name, Password pass)
-	if(isUserStore!(Store, TDigest))
-{
-	auto hash = makeHash(pass);
-
-	if(!store.modify(name, hash))
-		throw new UserNotFoundException(name);
-}
-
-///
-void removeUser(Store)(Store store, string name)
-	if(isUserStore!Store)
-{
-	if(!store.remove(name))
-		throw new UserNotFoundException(name);
-}
-
-///
-bool validateUser(Store)(Store store, string name, Password pass)
-	if(isUserStore!Store)
-{
-	auto hash = store.getHash(name);
-
-	if(hash.isNull())
+	Store store;
+	
+	///
+	this(Store store)
 	{
-		// To increase difficulty of username harvesting via timing attacks,
-		// don't just immediately return false. Instead check it against a
-		// fake salted password hash of 8 null bytes.
-		//
-		// Note: It would be better if this somehow used the same digest used
-		// by most user accounts in the system.
-		hash = NullableHash!Digest(parseHash(
-			"[SHA512]7YGYyyN1GwUlbnYwX3eXaN+ruTPvBRH/5BIa2/zmuu4=$x946sFuSCTJpWv8jIgeAPHZBM0a9iBRorGY8qjqZhnCzT292dz7eXEYtjS1YdTgQmMUk9m7EGeU7bUBad6GSGg=="
-		));
+		this.store = store;
 	}
 	
-	return isPasswordCorrect(pass, hash.get());
-}
+	///
+	void createUser(TDigest = DefaultDigest)
+		(string name, Password pass)
+		if(isUserStore!(Store, TDigest))
+	{
+		if(!store.create(name, makeHash(pass)))
+			throw new UserAlreadyExistsException(name);
+	}
 
-///
-bool userExists(Store)(Store store, string name)
-	if(isUserStore!Store)
-{
-	return !store.getHash(name).isNull();
-}
+	///
+	void modifyUser(TDigest = DefaultDigest)
+		(string name, Password pass)
+		if(isUserStore!(Store, TDigest))
+	{
+		auto hash = makeHash(pass);
 
-///
-ulong getUserCount(Store)(Store store)
-	if(isUserStore!Store && hasGetUserCount!Store)
-{
-	return store.getUserCount();
-}
+		if(!store.modify(name, hash))
+			throw new UserNotFoundException(name);
+	}
 
-///
-void wipeEverythingAndInit(Store)(Store store)
-	if(isUserStore!Store)
-{
-	store.wipeEverything();
-	store.init();
+	///
+	void removeUser(string name)
+	{
+		if(!store.remove(name))
+			throw new UserNotFoundException(name);
+	}
+
+	///
+	bool validateUser(string name, Password pass)
+	{
+		auto hash = store.getHash(name);
+
+		if(hash.isNull())
+		{
+			// To increase difficulty of username harvesting via timing attacks,
+			// don't just immediately return false. Instead check it against a
+			// fake salted password hash of 8 null bytes.
+			//
+			// Note: It would be better if this somehow used the same digest used
+			// by most user accounts in the system.
+			hash = NullableHash!Digest(parseHash(
+				"[SHA512]7YGYyyN1GwUlbnYwX3eXaN+ruTPvBRH/5BIa2/zmuu4=$x946sFuSCTJpWv8jIgeAPHZBM0a9iBRorGY8qjqZhnCzT292dz7eXEYtjS1YdTgQmMUk9m7EGeU7bUBad6GSGg=="
+			));
+		}
+		
+		return isPasswordCorrect(pass, hash.get());
+	}
+
+	///
+	bool userExists(string name)
+	{
+		return !store.getHash(name).isNull();
+	}
+
+	///
+	ulong getUserCount()() if(hasGetUserCount!Store)
+	{
+		return store.getUserCount();
+	}
+
+	///
+	void wipeEverythingAndInit()
+	{
+		store.wipeEverything();
+		store.init();
+	}
 }
