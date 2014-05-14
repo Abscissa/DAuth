@@ -6,6 +6,7 @@
 module instauser.core;
 
 import std.digest.digest;
+import std.exception;
 import std.typecons;
 
 import dauth.core;
@@ -161,5 +162,63 @@ struct InstaUser(Store)
 	{
 		store.wipeEverything();
 		store.init();
+	}
+	
+	/// Run standard set of tests on an InstaUser user store.
+	///
+	/// This will COMPLETELY DESTROY all data in the store, so it only be used
+	/// on a test store, not a live production one.
+	void unittestStore()
+	{
+		assertNotThrown( this.wipeEverythingAndInit() );
+		assert( this.getUserCount() == 0 );
+		
+		assertNotThrown!UserAlreadyExistsException( this.createUser("Mo",  dupPassword("stuffjunk")) );
+		assertNotThrown!UserAlreadyExistsException( this.createUser("Joe", dupPassword("pass123"  )) );
+		assertNotThrown!UserAlreadyExistsException( this.createUser("Cho", dupPassword("test pass")) );
+
+		assert( this.getUserCount() == 3 );
+		assert( this.userExists("Mo")  );
+		assert( this.userExists("Joe") );
+		assert( this.userExists("Cho") );
+		assert( !this.userExists("Herman") );
+		assert( !this.userExists("") );
+		
+		assertNotThrown!UserNotFoundException( this.removeUser("Mo") );
+
+		assert( this.getUserCount() == 2 );
+		assert( !this.userExists("Mo") );
+		assert( this.userExists("Joe") );
+		assert( this.userExists("Cho") );
+		
+		assertThrown!UserNotFoundException( this.removeUser("Mo") );
+		assertThrown!UserNotFoundException( this.removeUser("Herman") );
+
+		assert( this.getUserCount() == 2 );
+		assert( !this.userExists("Mo") );
+		assert( this.userExists("Joe") );
+		assert( this.userExists("Cho") );
+		
+		assert( this.validateUser ("Joe",    dupPassword("pass123")) );
+		assert( !this.validateUser("Cho",    dupPassword("pass123")) );
+		assert( !this.validateUser("Herman", dupPassword("pass123")) );
+
+		assert( !this.validateUser("Joe",    dupPassword("test pass")) );
+		assert( this.validateUser ("Cho",    dupPassword("test pass")) );
+		assert( !this.validateUser("Herman", dupPassword("test pass")) );
+		
+		assertNotThrown!UserNotFoundException( this.modifyUser("Cho", dupPassword("pass123")) );
+		assert( this.validateUser ("Cho", dupPassword("pass123"  )) );
+		assert( !this.validateUser("Cho", dupPassword("test pass")) );
+		
+		assert( this.store.getHash("Joe").toString() != this.store.getHash("Cho").toString() );
+
+		assert( this.getUserCount() == 2 );
+		assertNotThrown( this.wipeEverythingAndInit() );
+		assert( this.getUserCount() == 0 );
+		assertNotThrown( this.store.wipeEverything() );
+		
+		// Should not fail even if already wiped
+		assertNotThrown( this.store.wipeEverything() );
 	}
 }
