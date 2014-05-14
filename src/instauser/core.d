@@ -46,6 +46,8 @@ private template isUserStoreImpl(T, TDigest)
 			succ = t.modify!TDigest("name", Hash!TDigest());
 			succ = t.remove("name");
 			Hash!Digest hash = t.getHash("name");
+			t.wipeEverything();
+			t.init();
 		}));
 }
 
@@ -55,6 +57,12 @@ static assert(!isUserStore!(int,    Digest));
 static assert(!isUserStore!(Object, Digest));
 static assert(!isUserStore!int);
 static assert(!isUserStore!Object);
+
+///
+enum hasGetUserCount(T) = is(typeof((){
+	T.t;
+	ulong x = t.getUserCount();
+}));
 
 ///
 alias NullableHash(TDigest) = Nullable!(Hash!TDigest);
@@ -132,4 +140,19 @@ bool userExists(Store)(Store store, string name)
 	if(isUserStore!Store)
 {
 	return !store.getHash(name).isNull();
+}
+
+///
+ulong getUserCount(Store)(Store store)
+	if(isUserStore!Store && hasGetUserCount!Store)
+{
+	return store.getUserCount();
+}
+
+///
+void wipeEverythingAndInit(Store)(Store store)
+	if(isUserStore!Store)
+{
+	store.wipeEverything();
+	store.init();
 }

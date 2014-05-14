@@ -56,6 +56,25 @@ class MemoryStore
 		lookup.remove(name);
 		return true;
 	}
+	
+	///
+	ulong getUserCount()
+	{
+		return lookup.length;
+	}
+	
+	///
+	void wipeEverything()
+	{
+		lookup.destroy();
+		assert(lookup.length == 0);
+	}
+	
+	///
+	void init()
+	{
+		// Nothing to do
+	}
 }
 
 version(InstaUser_Unittest)
@@ -66,13 +85,15 @@ unittest
 	static assert(isUserStore!MemoryStore);
 	
 	auto store = new MemoryStore();
-	assert(store.lookup.length == 0);
+	assert( store.getUserCount() == 0 );
+	store.wipeEverythingAndInit();
+	assert( store.getUserCount() == 0 );
 	
 	assertNotThrown!UserAlreadyExistsException( store.createUser("Mo",  dupPassword("stuffjunk")) );
 	assertNotThrown!UserAlreadyExistsException( store.createUser("Joe", dupPassword("pass123"  )) );
 	assertNotThrown!UserAlreadyExistsException( store.createUser("Cho", dupPassword("test pass")) );
 
-	assert( store.lookup.keys.sort == ["Cho", "Joe", "Mo"] );
+	assert( store.getUserCount() == 3 );
 	assert( store.userExists("Mo")  );
 	assert( store.userExists("Joe") );
 	assert( store.userExists("Cho") );
@@ -81,7 +102,7 @@ unittest
 	
 	assertNotThrown!UserNotFoundException( store.removeUser("Mo") );
 
-	assert( store.lookup.keys.sort == ["Cho", "Joe"] );
+	assert( store.getUserCount() == 2 );
 	assert( !store.userExists("Mo") );
 	assert( store.userExists("Joe") );
 	assert( store.userExists("Cho") );
@@ -89,7 +110,7 @@ unittest
 	assertThrown!UserNotFoundException( store.removeUser("Mo") );
 	assertThrown!UserNotFoundException( store.removeUser("Herman") );
 
-	assert( store.lookup.keys.sort == ["Cho", "Joe"] );
+	assert( store.getUserCount() == 2 );
 	assert( !store.userExists("Mo") );
 	assert( store.userExists("Joe") );
 	assert( store.userExists("Cho") );
@@ -107,4 +128,9 @@ unittest
 	assert( !store.validateUser("Cho", dupPassword("test pass")) );
 	
 	assert( store.getHash("Joe").toString() != store.getHash("Cho").toString() );
+
+	assert( store.getUserCount() == 2 );
+	store.wipeEverythingAndInit();
+	assert( store.getUserCount() == 0 );
+	store.wipeEverything();
 }

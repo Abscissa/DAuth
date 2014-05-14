@@ -69,6 +69,7 @@ class MySQLNativeStore(Conn) if(is(Conn == MySQLConnection) || is(Conn == MySQLC
 	+/
 	this(Conn conn, string table = "users", string nameField = "name", string passField = "pass")
 	{
+		//TODO: Ban table/field names that have whitespace or backticks
 		this.conn = conn;
 		this.table = table;
 		this.nameField = nameField;
@@ -179,6 +180,58 @@ class MySQLNativeStore(Conn) if(is(Conn == MySQLConnection) || is(Conn == MySQLC
 			"Constraints on table `"~table~"` are probably not set up properly.");
 		return rowsAffected != 0;
 	}
+	
+	///
+	ulong getUserCount()
+	{
+		static string sql = null;
+		if(!sql)
+			sql = "SELECT COUNT(*) FROM `"~table~"`";
+
+		auto cmd = Command(lockConn());
+		cmd.sql = sql;
+		auto results = cmd.execSQLResult();
+		
+		enforce(results.length == 1,
+			"Error retreiving user count. Expected 1 row, got "~to!string(results.length));
+		
+		auto userCount = results[0][0].coerce!long();
+		enforce(userCount >= 0, "Received negative user count: "~to!string(userCount));
+		return cast(ulong)userCount;
+	}
+	
+	///
+	void wipeEverything()
+	{
+		static string sql = null;
+		if(!sql)
+			sql = "DROP TABLE IF EXISTS `"~table~"`";
+		
+		auto cmd = Command(lockConn());
+		ulong rowsAffected;
+		cmd.sql = sql;
+		cmd.execSQL(rowsAffected);
+	}
+	
+	///
+	void init()
+	{
+		static string sql = null;
+		if(!sql)
+		{
+			sql =
+				"CREATE TABLE `"~table~"` (
+				`"~nameField~"` varchar(255) NOT NULL,
+				`"~passField~"` varchar(255) NOT NULL,
+				PRIMARY KEY  (`"~nameField~"`)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8";
+		}
+		
+		auto cmd = Command(lockConn());
+		ulong rowsAffected;
+		cmd.sql = sql;
+		cmd.execSQL(rowsAffected);
+	}
 }
 
 version(InstaUser_Unittest)
@@ -194,10 +247,14 @@ unittest
 	auto store = new MySQLNativeStore!MySQLConnection(new MySQLConnection(connStr));
 	scope(exit) store.conn.close();
 	
+	store.wipeEverythingAndInit();
+	assert( store.getUserCount() == 0 );
+	
 	assertNotThrown!UserAlreadyExistsException( store.createUser("Mo",  dupPassword("stuffjunk")) );
 	assertNotThrown!UserAlreadyExistsException( store.createUser("Joe", dupPassword("pass123"  )) );
 	assertNotThrown!UserAlreadyExistsException( store.createUser("Cho", dupPassword("test pass")) );
 
+	assert( store.getUserCount() == 3 );
 	assert( store.userExists("Mo")  );
 	assert( store.userExists("Joe") );
 	assert( store.userExists("Cho") );
@@ -206,6 +263,7 @@ unittest
 	
 	assertNotThrown!UserNotFoundException( store.removeUser("Mo") );
 
+	assert( store.getUserCount() == 2 );
 	assert( !store.userExists("Mo") );
 	assert( store.userExists("Joe") );
 	assert( store.userExists("Cho") );
@@ -213,6 +271,7 @@ unittest
 	assertThrown!UserNotFoundException( store.removeUser("Mo") );
 	assertThrown!UserNotFoundException( store.removeUser("Herman") );
 
+	assert( store.getUserCount() == 2 );
 	assert( !store.userExists("Mo") );
 	assert( store.userExists("Joe") );
 	assert( store.userExists("Cho") );
@@ -230,4 +289,9 @@ unittest
 	assert( !store.validateUser("Cho", dupPassword("test pass")) );
 	
 	assert( store.getHash("Joe").toString() != store.getHash("Cho").toString() );
+
+	assert( store.getUserCount() == 2 );
+	store.wipeEverythingAndInit();
+	assert( store.getUserCount() == 0 );
+	store.wipeEverything();
 }
