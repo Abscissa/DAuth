@@ -86,7 +86,10 @@ unittest
 	
 	auto store = new MemoryStore();
 	assert( store.getUserCount() == 0 );
-	store.wipeEverythingAndInit();
+	assertNotThrown( store.wipeEverythingAndInit() );
+	assert( store.getUserCount() == 0 );
+	
+	assertNotThrown( store.wipeEverythingAndInit() );
 	assert( store.getUserCount() == 0 );
 	
 	assertNotThrown!UserAlreadyExistsException( store.createUser("Mo",  dupPassword("stuffjunk")) );
@@ -130,7 +133,10 @@ unittest
 	assert( store.getHash("Joe").toString() != store.getHash("Cho").toString() );
 
 	assert( store.getUserCount() == 2 );
-	store.wipeEverythingAndInit();
+	assertNotThrown( store.wipeEverythingAndInit() );
 	assert( store.getUserCount() == 0 );
-	store.wipeEverything();
+	assertNotThrown( store.wipeEverything() );
+	
+	// Should not fail even if already wiped
+	assertNotThrown( store.wipeEverything() );
 }
