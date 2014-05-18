@@ -4,6 +4,6 @@
 	"authors": ["Nick Sabalausky"],
 	"homepage": "https://github.com/abscissa/DAuth",
 	"license": "zlib/libpng",
-	"sourcePaths": "src",
-	"importPaths": "src"
+	"sourcePaths": ["src"],
+	"importPaths": ["src"]
 }

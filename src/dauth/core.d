@@ -672,7 +672,7 @@ bool isPasswordCorrect()(Password password,
 version(DAuth_Unittest)
 unittest
 {
-	// For validity of sanity checks, these sha1 and base64 strings
+	// For validity of sanity checks, these sha and base64 strings
 	// were NOT generated using Phobos.
 	auto plainText1        = dupPassword("hello world");
 	enum sha1Hash1         = cast(ubyte[20]) x"2aae6c35c94fcfb415dbe95f408b9ce91ee846ed";
