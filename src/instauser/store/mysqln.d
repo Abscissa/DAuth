@@ -5,8 +5,8 @@
 
 module instauser.store.mysqln;
 
-version(Have_mysqln) {} else
-	static assert(false, "Module instauser.store.mysqln requires -version=Have_mysqln");
+version(Have_mysql_native) {} else
+	static assert(false, "Module instauser.store.mysqln requires -version=Have_mysql_native");
 
 import std.conv;
 import std.digest.digest;
@@ -235,23 +235,38 @@ class MySQLNativeStore(Conn) if(is(Conn == MySQLConnection) || is(Conn == MySQLC
 }
 
 version(InstaUser_Unittest)
+	private string connStr = "host=localhost;port=3306;user=instauser_test;pwd=pass123;db=instauser_testdb";
+
+version(InstaUser_Unittest)
 unittest
 {
 	unitlog("Testing MySQLNativeStore!MySQLConnection");
 
 	static assert(isUserStore!(MySQLNativeStore!MySQLConnection));
 	static assert(hasGetUserCount!(MySQLNativeStore!MySQLConnection));
-	version(Have_vibe_d)
-	{
-		static assert(isUserStore!(MySQLNativeStore!MySQLConnectionPool));
-		static assert(hasGetUserCount!(MySQLNativeStore!MySQLConnectionPool));
-	}
 
-	auto connStr = "host=localhost;port=3306;user=instauser_test;pwd=pass123;db=instauser_testdb";
 	auto store = new MySQLNativeStore!MySQLConnection(new MySQLConnection(connStr));
 	scope(exit) store.conn.close();
 	
 	auto instaUser = InstaUser!(MySQLNativeStore!MySQLConnection)(store);
+	
+	// Run standard tests
+	instaUser.unittestStore();
+}
+
+version(InstaUser_Unittest)
+version(Have_vibe_d)
+unittest
+{
+	unitlog("Testing MySQLNativeStore!MySQLConnectionPool");
+
+	//TODO: Convenience aliases for MySQLNativeStore!MySQLConnectionPool
+
+	static assert(isUserStore!(MySQLNativeStore!MySQLConnectionPool));
+	static assert(hasGetUserCount!(MySQLNativeStore!MySQLConnectionPool));
+
+	auto store = new MySQLNativeStore!MySQLConnectionPool(new MySQLConnectionPool(connStr));
+	auto instaUser = InstaUser!(MySQLNativeStore!MySQLConnectionPool)(store);
 	
 	// Run standard tests
 	instaUser.unittestStore();

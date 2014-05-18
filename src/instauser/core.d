@@ -11,6 +11,10 @@ import std.typecons;
 
 import dauth.core;
 
+// Manually import this to work around RDMD linking issue in Vibe.d
+version(Have_vibe_d)
+	import vibe.internal.meta.traits;
+
 version(InstaUser_Unittest)
 {
 	version(InstaUser_Unittest_Quiet) {} else
@@ -28,7 +32,6 @@ version(InstaUser_Unittest)
 		}
 	}
 }
-
 
 ///
 enum bool isUserStore(T, TDigest) = isUserStore!T && isUserStoreImpl!(T, TDigest);
