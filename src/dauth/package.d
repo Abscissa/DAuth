@@ -34,6 +34,7 @@ import dauth.hashdrbg;
 
 Modules:
 $(LINK2 core.html,dauth.core)$(BR)
+$(LINK2 hashdrbg.html,dauth.hashdrbg)$(BR)
 $(LINK2 random.html,dauth.random)$(BR)
 $(LINK2 sha.html,dauth.sha)$(BR)
 +/
