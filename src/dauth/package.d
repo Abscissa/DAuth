@@ -1,5 +1,5 @@
 /++
-DAuth v0.5.1 - Authentication Utility for D
+DAuth v0.6 - Authentication Utility for D
 
 Writen in the D programming language.
 Tested with DMD 2.064.2 and DMD 2.065
@@ -29,6 +29,7 @@ Import all:
 ------------
 import dauth;
 import dauth.sha;
+import dauth.hashdrbg;
 ------------
 
 Modules:

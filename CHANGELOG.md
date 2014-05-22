@@ -3,7 +3,7 @@ DAuth - Changelog
 
 (Dates below are YYYY/MM/DD)
 
-v0.6.0 - TBD - SHA-2, Hash_DRBG, Separate Modules
+v0.6.0 - 2014/05/22 - SHA-2, Hash_DRBG and Separate Modules
 -------------------
 - **Enhancement:** Added cryptographically secure hash/digest algorithm [SHA-2](http://en.wikipedia.org/wiki/Sha2). Note: DAuth is only a temporary home for SHA-2 until it's [added to Phobos](https://github.com/D-Programming-Language/phobos/pull/2129))
 - **Enhancement:** Added cryptographic random number generator [Hash_DRBG](http://csrc.nist.gov/publications/nistpubs/800-90A/SP800-90A.pdf) and OS-native random number generation. Note: DAuth is may only be a temporary home for these. A pull request for std.random will be made.

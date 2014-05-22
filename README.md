@@ -13,7 +13,7 @@ The library also provides a forward-compatible string-based hash format for easy
 
 Note: DAuth isn't intended to directly provide any encryption, hashing, or random number generating algorithms, and tries to leave this up to other libraries (relying on the [Phobos](http://dlang.org/phobos/index.html)-defined protocols for [digests](http://dlang.org/phobos/std_digest_digest.html) and [random number generators](http://dlang.org/phobos/std_random.html)).
 
-At the moment, however, DAuth does provide implementations of [SHA-2](http://en.wikipedia.org/wiki/Sha2) and [Hash_DRBG](http://csrc.nist.gov/publications/nistpubs/800-90A/SP800-90A.pdf) because, as of DMD 2.065, Phobos doesn't contain any digest better than [SHA-1](http://en.wikipedia.org/wiki/SHA-1#Attacks) or any [cryptographically secure random number generator](http://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator). DAuth's intention is to migrate these algorithms over to Phobos.
+At the moment, however, DAuth does provide implementations of [SHA-2](http://en.wikipedia.org/wiki/Sha2) and [Hash_DRBG](http://csrc.nist.gov/publications/nistpubs/800-90A/SP800-90A.pdf) because, as of DMD 2.065, Phobos doesn't contain any digest better than [SHA-1](http://en.wikipedia.org/wiki/SHA-1#Attacks) (although it [is in git master](https://github.com/D-Programming-Language/phobos/pull/2129) and should be included in 2.066) or any [cryptographically secure random number generator](http://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator). DAuth's intention is to migrate these algorithms over to Phobos.
 
 [DAuth Changelog](https://github.com/Abscissa/DAuth/blob/master/CHANGELOG.md)
 
@@ -73,7 +73,7 @@ string loadUserPassword(string user) {...}
 ubyte[] loadUserSalt(string user) {...}
 string loadUserDigest(string user) {...}
 
-void setPassword(string user, string pass)
+void setPassword(string user, char[] pass)
 {
 	// Note: This randomizer is not actually suitable for crypto purposes.
 	static MinstdRand rand;
@@ -85,7 +85,7 @@ void setPassword(string user, string pass)
 	saveUserInfo(user, "MD5", myHash.hash, myHash.salt);
 }
 
-bool validateUser(string user, string pass)
+bool validateUser(string user, char[] pass)
 {
 	string hash = loadUserPassword(user);
 	ubyte[] salt = loadUserSalt(user);
