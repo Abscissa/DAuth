@@ -5,8 +5,6 @@ DAuth is a low-level authentication library for [D](http://dlang.org) with no ex
 
 By default, it uses known-good hashing and randomization algorithms (currently SHA-512 and Hash_DRBG), but it accepts any Phobos-compatible [hash digest](http://dlang.org/phobos/std_digest_digest.html) or [random number generator](http://dlang.org/phobos/std_random.html). You can have as much or as little control as you need, making DAuth suitable for both new projects and interfacing with any existing hashed-password store.
 
-DAuth is a low-level authentication library which 
-
 DAuth's main interface is:
 
 - ```makeHash(Password)```: Generates a salted hash for a password. The salt, the hashing ("digest") algorithm, and the salt/password combing ("salter") algorithm can optionally be provided, or left as default. By default, the salt is automatically generated at random.
