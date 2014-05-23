@@ -1,7 +1,7 @@
 DAuth - Authentication Utility for D
 ====================================
 
-DAuth is a low-level authentication library for [D](http://dlang.org) with no external dependencies other than the standard library. It accepts any Phobos-compatible [digest](http://dlang.org/phobos/std_digest_digest.html) or [random number generator](http://dlang.org/phobos/std_random.html) algorithm and provides an simple, yet flexible, API to help you easily incorporate secure, upgradable user authentication based on [salted password hashes](http://en.wikipedia.org/wiki/Salt_%28cryptography%29) into your software. You can have as much, or as little, control as you need.
+DAuth is a low-level authentication library for [D](http://dlang.org) with no external dependencies other than the standard library. It accepts any Phobos-compatible [digest](http://dlang.org/phobos/std_digest_digest.html) or [random number generator](http://dlang.org/phobos/std_random.html) algorithm and provides a simple, yet flexible, API to help you easily incorporate secure, upgradable user authentication based on [salted password hashes](http://en.wikipedia.org/wiki/Salt_%28cryptography%29) into your software. You can have as much, or as little, control as you need.
 
 DAuth's main interface is:
 
