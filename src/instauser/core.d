@@ -169,7 +169,7 @@ struct InstaUser(Store)
 	
 	/// Run standard set of tests on an InstaUser user store.
 	///
-	/// This will COMPLETELY DESTROY all data in the store, so it only be used
+	/// This will COMPLETELY DESTROY all data in the store, so only use it
 	/// on a test store, not a live production one.
 	void unittestStore()
 	{
