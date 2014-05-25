@@ -235,17 +235,51 @@ class MySQLNativeStore(Conn) if(is(Conn == MySQLConnection) || is(Conn == MySQLC
 }
 
 version(InstaUser_Unittest)
-	private string connStr = "host=localhost;port=3306;user=instauser_test;pwd=pass123;db=instauser_testdb";
+{
+	private @property string unittestMySQLConnStrFile()
+	{
+		import std.file, std.path;
+		
+		static string cached;
+		if(!cached)
+			cached = thisExePath().dirName()~"/unittestConf_mysqlConnectionStr.txt";
+		
+		return cached;
+	}
+	
+	private @property string unittestMySQLConnStr()
+	{
+		import std.file, std.string;
+
+		static string cached;
+		if(!cached)
+		{
+			if(!unittestMySQLConnStrFile.exists())
+			{
+				// Create a default file
+				std.file.write(unittestMySQLConnStrFile, "host=localhost;port=3306;user=instauser_test;pwd=pass123;db=instauser_testdb");
+			}
+			
+			cached = cast(string) std.file.read(unittestMySQLConnStrFile);
+			cached = cached.strip();
+		}
+		
+		return cached;
+	}
+}
 
 version(InstaUser_Unittest)
 unittest
 {
 	unitlog("Testing MySQLNativeStore!MySQLConnection");
+	unitlog("NOTE: If this fails to connect to your MySQL server, "~
+		"then edit the connection string in this file: "~
+		unittestMySQLConnStrFile);
 
 	static assert(isUserStore!(MySQLNativeStore!MySQLConnection));
 	static assert(hasGetUserCount!(MySQLNativeStore!MySQLConnection));
 
-	auto store = new MySQLNativeStore!MySQLConnection(new MySQLConnection(connStr));
+	auto store = new MySQLNativeStore!MySQLConnection(new MySQLConnection(unittestMySQLConnStr));
 	scope(exit) store.conn.close();
 	
 	auto instaUser = InstaUser!(MySQLNativeStore!MySQLConnection)(store);
@@ -265,7 +299,7 @@ unittest
 	static assert(isUserStore!(MySQLNativeStore!MySQLConnectionPool));
 	static assert(hasGetUserCount!(MySQLNativeStore!MySQLConnectionPool));
 
-	auto store = new MySQLNativeStore!MySQLConnectionPool(new MySQLConnectionPool(connStr));
+	auto store = new MySQLNativeStore!MySQLConnectionPool(new MySQLConnectionPool(unittestMySQLConnStr));
 	auto instaUser = InstaUser!(MySQLNativeStore!MySQLConnectionPool)(store);
 	
 	// Run standard tests
