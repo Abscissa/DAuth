@@ -40,9 +40,6 @@ enum isRandomStream(T) =
 		t.read(buf);
 	}));
 
-/// Check whether T is either isUniformRNG or isRandomStream.
-enum isSomeStream(T) = isUniformRNG!T || isRandomStream!T;
-
 static assert(isRandomStream!(SystemEntropyStream));
 static assert(isRandomStream!(HashDRBGStream!()));
 static assert(!isRandomStream!(SystemEntropy!uint));
