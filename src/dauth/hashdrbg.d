@@ -25,7 +25,13 @@ version(Windows)
 	import core.runtime;
 }
 
-///
+/++
+Check if T is a stream-like random number generator.
+
+Because std.stream is pending a full replacement, be aware that
+stream-like random number generators currently use a temporary
+design that may change once a new std.stream is available.
++/
 enum isRandomStream(T) =
 	is(typeof({
 		static assert(T.isUniformRandomStream);
@@ -61,6 +67,10 @@ number generation needs, but it's primary inteded for seeding/reseeding
 cryptographic psuedo-random number generators, such as Hash_DRBG or HMAC_DRBG,
 which are likely to be faster and no less secure than using an entropy source
 directly.
+
+Because std.stream is pending a full replacement, be aware that
+stream-like random number generators currently use a temporary
+design that may change once a new std.stream is available.
 +/
 struct SystemEntropyStream
 {
@@ -175,6 +185,10 @@ TSHA: Any SHA-1 or SHA-2 digest type. Default is SHA512.
 
 custom: Hash_DRBG's personalization string. You can optionally set this to any
 specific value of your own choosing for improved security.
+
+Because std.stream is pending a full replacement, be aware that
+stream-like random number generators currently use a temporary
+design that may change once a new std.stream is available.
 +/
 struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStream = SystemEntropyStream)
 	if(isInstanceOf!(SHA, TSHA))
