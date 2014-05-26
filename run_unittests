@@ -11,4 +11,4 @@ echo 'Building/Running non-Vibe.d tests (Phobos sockets)'
 rdmd -unittest -version=InstaUser_Unittest -Isrc -main --force -ofbin/unittests-phobos -version=Have_mysql_native "$@" src/instauser/package.d
 
 echo 'Building/Running full Vibe.d tests (Vibe.d sockets)'
-rdmd -unittest -version=InstaUser_Unittest -Isrc -main --force -ofbin/unittests-vibed -version=Have_mysql_native -version=Have_vibe_d "$@" src/instauser/package.d
+rdmd -unittest -version=InstaUser_Unittest -Isrc -main --force -ofbin/unittests-vibed -version=Have_mysql_native -version=Have_vibe_d -L-levent -L-lssl -L-lcrypto "$@" src/instauser/package.d
