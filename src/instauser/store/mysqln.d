@@ -276,10 +276,12 @@ version(InstaUser_Unittest)
 version(InstaUser_Unittest)
 unittest
 {
-	unitlog("Testing MySQLNativePlainStore");
-	unitlog("NOTE: If this fails to connect to your MySQL server, "~
+	import std.path : buildNormalizedPath;
+	
+	unitlog("Testing MySQLNativePlainStore\n"~
+		"NOTE: If this fails to connect to your MySQL server, "~
 		"then edit the connection string in this file: "~
-		unittestMySQLConnStrFile);
+		buildNormalizedPath(unittestMySQLConnStrFile));
 
 	static assert(isUserStore!(MySQLNativePlainStore));
 	static assert(hasGetUserCount!(MySQLNativePlainStore));
