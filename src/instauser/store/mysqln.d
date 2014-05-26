@@ -234,6 +234,11 @@ class MySQLNativeStore(Conn) if(is(Conn == MySQLConnection) || is(Conn == MySQLC
 	}
 }
 
+/// Convenience aliases
+alias MySQLNativePlainStore = MySQLNativeStore!MySQLConnection;
+version(Have_vibe_d)
+	alias MySQLNativeVibePoolStore = MySQLNativeStore!MySQLConnectionPool; ///ditto
+
 version(InstaUser_Unittest)
 {
 	private @property string unittestMySQLConnStrFile()
@@ -271,18 +276,18 @@ version(InstaUser_Unittest)
 version(InstaUser_Unittest)
 unittest
 {
-	unitlog("Testing MySQLNativeStore!MySQLConnection");
+	unitlog("Testing MySQLNativePlainStore");
 	unitlog("NOTE: If this fails to connect to your MySQL server, "~
 		"then edit the connection string in this file: "~
 		unittestMySQLConnStrFile);
 
-	static assert(isUserStore!(MySQLNativeStore!MySQLConnection));
-	static assert(hasGetUserCount!(MySQLNativeStore!MySQLConnection));
+	static assert(isUserStore!(MySQLNativePlainStore));
+	static assert(hasGetUserCount!(MySQLNativePlainStore));
 
-	auto store = new MySQLNativeStore!MySQLConnection(new MySQLConnection(unittestMySQLConnStr));
+	auto store = new MySQLNativePlainStore(new MySQLConnection(unittestMySQLConnStr));
 	scope(exit) store.conn.close();
 	
-	auto instaUser = InstaUser!(MySQLNativeStore!MySQLConnection)(store);
+	auto instaUser = InstaUser!(MySQLNativePlainStore)(store);
 	
 	// Run standard tests
 	instaUser.unittestStore();
@@ -292,15 +297,13 @@ version(InstaUser_Unittest)
 version(Have_vibe_d)
 unittest
 {
-	unitlog("Testing MySQLNativeStore!MySQLConnectionPool");
+	unitlog("Testing MySQLNativeVibePoolStore");
 
-	//TODO: Convenience aliases for MySQLNativeStore!MySQLConnectionPool
+	static assert(isUserStore!(MySQLNativeVibePoolStore));
+	static assert(hasGetUserCount!(MySQLNativeVibePoolStore));
 
-	static assert(isUserStore!(MySQLNativeStore!MySQLConnectionPool));
-	static assert(hasGetUserCount!(MySQLNativeStore!MySQLConnectionPool));
-
-	auto store = new MySQLNativeStore!MySQLConnectionPool(new MySQLConnectionPool(unittestMySQLConnStr));
-	auto instaUser = InstaUser!(MySQLNativeStore!MySQLConnectionPool)(store);
+	auto store = new MySQLNativeVibePoolStore(new MySQLConnectionPool(unittestMySQLConnStr));
+	auto instaUser = InstaUser!(MySQLNativeVibePoolStore)(store);
 	
 	// Run standard tests
 	instaUser.unittestStore();
