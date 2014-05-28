@@ -38,9 +38,10 @@ enum isRandomStream(T) =
 		T t;
 		ubyte[] buf;
 		t.read(buf);
+		t.read(buf, No.PredictionResistance);
 	}));
 
-static assert(isRandomStream!(SystemEntropyStream));
+static assert(isRandomStream!(SystemEntropyStream!()));
 static assert(isRandomStream!(HashDRBGStream!()));
 static assert(!isRandomStream!(SystemEntropy!uint));
 static assert(!isRandomStream!(HashDRBG!uint));
@@ -48,44 +49,57 @@ static assert(!isRandomStream!uint);
 static assert(!isRandomStream!File);
 
 /++
-Reads any desired amount of random entropy from a system-specific cryptographic
-random number generator. On Windows, this loads ADVAPI32.DLL and uses
-RtlGenRandom. On Posix, this uses '/dev/random'.
+The underlying stream-like interface for SystemEntropy.
 
-Optionally, you can use open() and close() to control the lifetime of
-SystemEntropyStream's system handles (ie, loading/uloading ADVAPI32.DLL and
-opening/closing '/dev/random'). But this is not normally necessary since
-SystemEntropyStream automatically opens them upon reading and closes upon
-module destruction.
+On Windows, pathToRandom and pathToStrongRandom must be null because Windows
+uses a system call, not a file path, to retreive system entropy.
 
-The speed and cryptographic security of this is dependent on your operating
-system. This may be perfectly suitable for many cryptographic-grade random
-number generation needs, but it's primary inteded for seeding/reseeding
-cryptographic psuedo-random number generators, such as Hash_DRBG or HMAC_DRBG,
-which are likely to be faster and no less secure than using an entropy source
-directly.
+On Posix, pathToRandom must NOT be null. If pathToStrongRandom is null,
+then pathToStrongRandom is assumed to be pathToRandom.
 
 Because std.stream is pending a full replacement, be aware that
 stream-like random number generators currently use a temporary
 design that may change once a new std.stream is available.
 +/
-struct SystemEntropyStream
+struct SystemEntropyStream(string pathToRandom = defaultPathToRandom,
+	string pathToStrongRandom = defaultPathToStrongRandom)
 {
 	enum isUniformRandomStream = true; /// Mark this as a Rng Stream
 
 	version(Windows)
 	{
+		import std.c.windows.windows;
+		import core.runtime;
+		
+		static assert(pathToRandom is null, "On Windows, SystemEntropyStream's pathToRandom must be null");
+		static assert(pathToStrongRandom is null, "On Windows, SystemEntropyStream's pathToStrongRandom must be null");
+		
 		private static HMODULE _advapi32;
 		private static extern(Windows) BOOL function(void*, uint) _RtlGenRandom;
 	}
 	else version(Posix)
+	{
+		import std.stdio : File, _IONBF;
+
+		static assert(pathToRandom !is null, "On Posix, SystemEntropyStream's pathToRandom must NOT be null");
+
 		private static File devRandom;
+		private static File devStrongRandom;
+	}
 	else
-		static assert(false);
+		static assert(0);
 	 
-	/// Fills the buffer with entropy from the system-specific entropy generator.
-	/// Automatically opens SystemEntropyStream if it's closed.
-	static void read(ubyte[] buf)
+	/++
+	Fills the buffer with entropy from the system-specific entropy generator.
+	Automatically opens SystemEntropyStream if it's closed.
+	
+	If predictionResistance is Yes.PredictionResistance, then this will read
+	from a secondary source (if available), such as /dev/random instead of
+	/dev/urandom, which may block for a noticable amount of time to ensure
+	a minimum amount of estimated entropy is available. If no secondary
+	source is available, then predictionResistance is ignored.
+	+/
+	static void read(ubyte[] buf, Flag!"PredictionResistance" predictionResistance = No.PredictionResistance)
 	{
 		open();
 		
@@ -95,9 +109,14 @@ struct SystemEntropyStream
 			_RtlGenRandom(buf.ptr, cast(uint)buf.length);
 		}
 		else version(Posix)
-			devRandom.rawRead(buf);
+		{
+			if(predictionResistance == Yes.PredictionResistance && pathToStrongRandom)
+				devStrongRandom.rawRead(buf);
+			else
+				devRandom.rawRead(buf);
+		}
 		else
-			static assert(false);
+			static assert(0);
 	}
 
 	/// Establishes a handle/connection to the system-specific entropy generator.
@@ -116,12 +135,26 @@ struct SystemEntropyStream
 		}
 		else version(Posix)
 		{
-			devRandom = File("/dev/random");
-			devRandom.setvbuf(null, _IONBF); // Disable buffering for security
+			static void openFile(ref File f, string path)
+			{
+				if(!f.isOpen)
+				{
+					f = File(path);
+					
+					// Disable buffering for security, and to avoid consuming
+					// more system entropy than necessary.
+					f.setvbuf(null, _IONBF);
+				}
+			}
+			
+			openFile(devRandom, pathToRandom);
+			if(pathToStrongRandom)
+				openFile(devStrongRandom, pathToStrongRandom);
 		}
 		else
-			static assert(false);
+			static assert(0);
 	}
+	
 	
 	///	Manually release the handle/connection to the system-specific entropy generator.
 	static void close()
@@ -139,9 +172,11 @@ struct SystemEntropyStream
 		{
 			if(devRandom.isOpen)
 				devRandom.close();
+			if(devStrongRandom.isOpen)
+				devStrongRandom.close();
 		}
 		else
-			static assert(false);
+			static assert(0);
 	}
 
 	/// Check whether SystemEntropyStream is currently connected to with the
@@ -151,9 +186,9 @@ struct SystemEntropyStream
 		version(Windows)
 			return _advapi32 && _RtlGenRandom;
 		else version(Posix)
-			return devRandom.isOpen;
+			return devRandom.isOpen && (!pathToStrongRandom || devStrongRandom.isOpen);
 		else
-			static assert(false);
+			static assert(0);
 	}
 	
 	/// Automatically close upon module destruction.
@@ -163,9 +198,78 @@ struct SystemEntropyStream
 	}
 }
 
-/// A convenience alias to create a UniformRNG from SystemEntropyStream.
-/// See the WrappedStreamRNG documentation for important information.
-alias SystemEntropy(Elem) = WrappedStreamRNG!(SystemEntropyStream, Elem);
+/++
+Reads random entropy from a system-specific cryptographic random number
+generator. On Windows, this loads ADVAPI32.DLL and uses RtlGenRandom.
+On Posix, this reads from a file (by default, "/dev/urandom" normally and
+"/dev/random" when Yes.PredictionResistance is requested). The speed
+and cryptographic security of this is dependent on your operating system.
+
+In most cases, this should not be used directly. It quickly consumes
+available system entropy, which can decrease the cryptographic RNG
+effectiveness across the whole computer and, on Linux, can cause reads from
+"/dev/random" to stall for noticably long periods of time. Instead,
+this is best used for seeding cryptographic psuedo-random number generators,
+such as HashDRBG.
+
+Optionally, you can use open() and close() to control the lifetime of
+SystemEntropyStream's system handles (ie, loading/uloading ADVAPI32.DLL and
+opening/closing pathToRandom). But this is not normally necessary since
+SystemEntropyStream automatically opens them upon reading and closes upon
+module destruction.
+
+On Windows, pathToRandom and pathToStrongRandom must be null because Windows
+uses a system call, not a file path, to retreive system entropy.
+
+On Posix, pathToRandom must NOT be null. If pathToStrongRandom is null,
+then pathToStrongRandom is assumed to be pathToRandom.
+
+This is a convenience alias for WrappedStreamRNG!(SystemEntropyStream, Elem).
+
+Note that to conform to the expected InputRange interface, this must keep a
+copy of the last generated value in memory. For security purposes, it may
+occasionally be appropriate to make an extra popFront() call before and/or
+after retreiving entropy values. This may decrease the chance of using
+a compromized entropy value in the event of a memory-sniffing attacker.
++/
+alias SystemEntropy(Elem, string pathToRandom = defaultPathToRandom,
+	string pathToStrongRandom = defaultPathToStrongRandom) =
+	WrappedStreamRNG!(SystemEntropyStream!(pathToRandom, pathToStrongRandom), Elem);
+
+version (StdDdoc)
+{
+	/++
+	The path to the default OS-provided cryptographic entropy generator.
+	This should not be a blocking generator.
+	
+	On Posix, this is "/dev/urandom". On Windows is empty string, because
+	Windows uses a system call, not a file path, to retreive system entropy.
+	+/
+	enum string defaultPathToRandom = null;
+
+	/++
+	The path to an OS-provided cryptographic entropy generator to be used
+	when Yes.PredictionResistance is requested. This should be at least as
+	strong as defaultPathToRandom. But unlike defaultPathToRandom, this may
+	be a generator that blocks when system entropy is low.
+	
+	On Posix, this is "/dev/random". On Windows is empty string, because
+	Windows uses a system call, not a file path, to retreive system entropy.
+	+/
+	enum string defaultPathToStrongRandom = null;
+}
+else version (Windows)
+{
+	enum string defaultPathToRandom = null;
+	enum string defaultPathToStrongRandom = null;
+}
+else version (Posix)
+{
+	enum defaultPathToRandom = "/dev/urandom";
+	enum defaultPathToStrongRandom = "/dev/random";
+}
+else
+	static assert(0);
 
 static assert(isUniformRNG!(SystemEntropy!(ubyte[1]), ubyte[1]));
 static assert(isUniformRNG!(SystemEntropy!(ubyte[5]), ubyte[5]));
@@ -175,19 +279,24 @@ static assert(isUniformRNG!(SystemEntropy!uint,       uint    ));
 static assert(isUniformRNG!(SystemEntropy!ulong,      ulong   ));
 
 /++
-Cryptographic random number generator Hash_DRBG, as defined in
-NIST's $(LINK2 http://csrc.nist.gov/publications/nistpubs/800-90A/SP800-90A.pdf, SP800-90A).
+The underlying stream-like interface for SystemEntropy.
 
 TSHA: Any SHA-1 or SHA-2 digest type. Default is SHA512.
 
-custom: Hash_DRBG's personalization string. You can optionally set this to any
-specific value of your own choosing for improved security.
+custom: The Hash_DRBG algorithm's personalization string. You
+can optionally set this to any specific value of your own choosing for
+improved security.
+
+EntropyStream: The source of entropy from which to draw.
+The default is SystemEntropyStream!(), but can be overridden. If you provide
+your own, then it's your responsibility to ensure your entropy source is
+non-deterministic.
 
 Because std.stream is pending a full replacement, be aware that
 stream-like random number generators currently use a temporary
 design that may change once a new std.stream is available.
 +/
-struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStream = SystemEntropyStream)
+struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStream = SystemEntropyStream!())
 	if(isInstanceOf!(SHA, TSHA))
 {
 	enum isUniformRandomStream = true; /// Mark this as a Rng Stream
@@ -195,15 +304,15 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 	// In bits. This is the same as the SHA's digestSize
 	private enum outputSizeBits = TemplateArgsOf!(TSHA)[1];
 
-	static if(outputSizeBits < 384)
+	static if (outputSizeBits < 384)
 		private enum seedSizeBytes = 440/8; // In bytes
 	else
 		private enum seedSizeBytes = 888/8; // In bytes
 	
-	// This can be just about any arbitrary size, although there is a
-	// minimum. 1024 bits is above the minimum for SHA-1 and all SHA-2.
-	// See NIST's [SP800-90A] and [SP800-57] for details.
-	private enum entropySizeBytes = 1024/8;
+	// Securty strength 256 bits. Less could provide insufficitent security,
+	// but more would consume more of the system's entropy for no benefit.
+	// See NIST's [SP800-90A] and [SP800-57] for details on this value.
+	private enum entropySizeBytes = 256/8;
 	
 	// This must be at least entropySizeBytes/2
 	private enum nonceSizeBytes = entropySizeBytes/2;
@@ -221,26 +330,34 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 	private enum int maxGenerated = 0x0FFF_FFFF;
 	
 	/++
-	Set to Yes.PredictionResistance for additional protection against
-	prediction attacks by forcing a reseed with fresh entropy for each call
-	to read(). Reset back to No.PredictionResistance afterwords for faster,
-	but still cryptographically-secure, operation when you're done with
-	extra-elevated security needs.
-
+	If your security needs are high enough that you'd rather risk blocking
+	for an arbitrarily-long period of time while sufficient system entropy
+	builds, than risk generating values from potentially insufficient entropy
+	(ex, if you'd rather reseed from Linux's /dev/random than /dev/urandom),
+	then set this to Yes.PredictionResistance. The next time a value is
+	generated, the internal state will first be replenished with additional
+	entropy, potentially from a blocking source.
+	
+	After the next value is generated, this will automatically reset back
+	to No.PredictionResistance to avoid needlessly consuming the system's
+	available entropy. Note that forcefully setting this to Yes.PredictionResistance
+	before each and every value generated is NOT cryptographically necessary,
+	can quickly starve the system of entropy, and should not be done.
+	
 	Default is No.PredictionResistance.
 	
-	This setting is for changing read()'s default bahavior. Individual calls to
-	read() can manually override this per call.
+	This setting is for changing read()'s default bahavior. Individual calls
+	to read() can manually override this per call.
 	+/
 	Flag!"PredictionResistance" predictionResistance = No.PredictionResistance;
 
 	/++
-	Further improve	security by setting Hash_DRBG's optional "additional input"
+	Further improve security by setting Hash_DRBG's optional "additional input"
 	for each call to read(). This can be set to a new value before each read()
 	call for maximum effect.
-
-	This setting is for changing read()'s default bahavior. Individual calls to
-	read() can manually override this per call.
+	
+	This setting is for changing read()'s default bahavior. Individual calls
+	to read() can manually override this per call.
 	+/
 	ubyte[] extraInput = null;
 
@@ -252,7 +369,7 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 		
 		// seedMaterial = entropy ~ nonce ~ custom;
 		ubyte[entropySizeBytes + nonceSizeBytes + custom.length] seedMaterial = void;
-		EntropyStream.read( seedMaterial[0 .. $-custom.length] );
+		EntropyStream.read( seedMaterial[0 .. $-custom.length], predictionResistance );
 		seedMaterial[$-custom.length .. $] = cast(ubyte[])custom;
 		
 		// Generate seed for V
@@ -272,7 +389,7 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 		ubyte[value.sizeof + entropySizeBytes] seedMaterial = void;
 		seedMaterial[0] = 0x01;
 		seedMaterial[1 .. $-entropySizeBytes] = value[1..$];
-		EntropyStream.read( seedMaterial[$-entropySizeBytes .. $] );
+		EntropyStream.read( seedMaterial[$-entropySizeBytes .. $], predictionResistance );
 		
 		// Generate seed for V
 		hashDerivation(seedMaterial, extraInput, value[1..$]);
@@ -317,6 +434,8 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 	{
 		if(numGenerated >= maxGenerated || overridePredictionResistance == Yes.PredictionResistance)
 			reseed(overrideExtraInput);
+		
+		predictionResistance = No.PredictionResistance;
 		
 		if(overrideExtraInput)
 		{
@@ -429,9 +548,53 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 	}
 }
 
-/// A convenience template to create a UniformRNG from HashDRBGStream.
-/// See the WrappedStreamRNG documentation for important information.
-template HashDRBG(Elem, TSHA = SHA512, string custom = "D Crypto RNG", EntropyStream = SystemEntropyStream)
+/++
+Cryptographic random number generator Hash_DRBG, as defined in
+NIST's $(LINK2 http://csrc.nist.gov/publications/nistpubs/800-90A/SP800-90A.pdf, SP800-90A).
+
+The Hash_DRBG algorithm ("Hash - Deterministic Random Bit Generator") uses
+SHA-2 (or optionally SHA-1) to stretch the useful life of a non-deterministic
+$(LINK2 https://en.wikipedia.org/wiki/Entropy_%28information_theory%29, entropy)
+source for security and cryptographic purposes, such as
+$(LINK2 http://en.wikipedia.org/wiki/One-time_password, single-use tokens),
+$(LINK2 http://en.wikipedia.org/wiki/Cryptographic_nonce, nonces)
+or $(LINK2 http://en.wikipedia.org/wiki/Salt_%28cryptography%29, password salts).
+
+While technically deterministic, Hash_DRBG is not intended for deterministic,
+repeatable uses of psuedo-random number generation (such as generating randomized
+interactive worlds with minimal-storage requirements - for which something like
+Mt19937 would be better suited). For the sake of security, the algorithm is
+intentionally defined to not support direct seeding and to automatically
+accumulate (but never discard) entropy from not only a pre-determined source
+of unpredictable entropy, but also from actual usage patterns. In that
+spirit, this implementation is non-seedable, non-ForwardRange (only InputRange),
+and all instances share a static state (albeit per thread, per EntropyStream type).
+
+Mainly through the underlying HashDRBGStream (accessed via the $(D stream) member),
+this supports the optional features of the Hash_DRBG algorithm. Specifically,
+prediction resistance via forced reseeding, providing additional input for
+each value generated, and custom personalization strings.
+
+TSHA: Any SHA-1 or SHA-2 digest type. Default is SHA512.
+
+custom: The Hash_DRBG algorithm's personalization string. You
+can optionally set this to any specific value of your own choosing for
+extra security.
+
+EntropyStream: The source of entropy from which to draw.
+The default is SystemEntropyStream!(), but can be overridden. If you provide
+your own, then it's your responsibility to ensure your entropy source is
+non-deterministic.
+
+This is a convenience alias for WrappedStreamRNG!(HashDRBGStream, Elem).
+
+Note that to conform to the expected InputRange interface, this must keep a
+copy of the last generated value in memory. For security purposes, it may
+occasionally be appropriate to make an extra popFront() call before and/or
+after retrieving entropy values. This may decrease the chance of using
+a compromised entropy value in the event of a memory-sniffing attacker.
++/
+template HashDRBG(Elem, TSHA = SHA512, string custom = "D Crypto RNG", EntropyStream = SystemEntropyStream!())
 	if(isInstanceOf!(SHA, TSHA))
 {
 	alias HashDRBG = WrappedStreamRNG!(HashDRBGStream!(TSHA, custom, EntropyStream), Elem);
@@ -446,7 +609,7 @@ static assert(isUniformRNG!(HashDRBG!ulong,      ulong   ));
 static assert(isUniformRNG!(HashDRBG!(uint), uint));
 static assert(isUniformRNG!(HashDRBG!(uint, SHA256), uint));
 static assert(isUniformRNG!(HashDRBG!(uint, SHA256, "custom"), uint));
-static assert(isUniformRNG!(HashDRBG!(uint, SHA256, "custom", SystemEntropyStream), uint));
+static assert(isUniformRNG!(HashDRBG!(uint, SHA256, "custom", SystemEntropyStream!()), uint));
 
 version(DAuth_Unittest)
 unittest
@@ -498,11 +661,12 @@ unittest
 Takes a RandomStream (ex: SystemEntropyStream or HashDRBGStream) and
 wraps it into a UniformRNG InputRange.
 
-Note that, to conform to the expected InputRange interface, this must keep a
-copy of the last generated value in memory. For security purposes, it may
-occasionally be appropriate to make an extra popFront() call before and/or
-after retreiving entropy values. This may decrease the chance of using
-a compromized entropy value in the event of a memory-sniffing attacker.
+Note that to conform to the expected InputRange interface, this must keep a
+copy of the last generated value in memory. If using this for security-related
+purposes, it may occasionally be appropriate to make an extra popFront()
+call before and/or after retreiving entropy values. This may decrease the
+chance of using a compromized entropy value in the event of a
+memory-sniffing attacker.
 +/
 struct WrappedStreamRNG(RandomStream, StaticUByteArr)
 	if(isRandomStream!RandomStream && isStaticArray!StaticUByteArr && is(ElementType!StaticUByteArr==ubyte))
@@ -581,7 +745,7 @@ version(DAuth_Unittest)
 unittest
 {
 	alias RandStreamTypes = TypeTuple!(
-		SystemEntropyStream,
+		SystemEntropyStream!(),
 		HashDRBGStream!SHA1,
 		HashDRBGStream!SHA224,
 		HashDRBGStream!SHA256,
@@ -614,7 +778,7 @@ unittest
 		randCopy.read(values2);
 		assert(values1 != values2);
 		
-		static if(!is(RandStream == SystemEntropyStream))
+		static if(!is(RandStream == SystemEntropyStream!()))
 		{
 			values2[] = ubyte.init;
 
