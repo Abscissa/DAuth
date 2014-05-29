@@ -126,8 +126,11 @@ alias NullableHash(TDigest) = Nullable!(Hash!TDigest);
 /// Thrown by InstaUser.createUser when trying to create a user that already exists.
 class UserAlreadyExistsException : Exception
 {
+	string name;
+	
 	this(string name)
 	{
+		this.name = name;
 		super("User already exists: "~name);
 	}
 }
@@ -136,8 +139,11 @@ class UserAlreadyExistsException : Exception
 /// user doesn't exist.
 class UserNotFoundException : Exception
 {
+	string name;
+
 	this(string name)
 	{
+		this.name = name;
 		super("User not found: "~name);
 	}
 }
