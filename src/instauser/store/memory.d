@@ -14,22 +14,26 @@ import instauser.core;
 ///
 class MemoryStore
 {
-	private shared string[string] lookup; // lookup[name] == salted hash string
+	/// rawStore[name] == salted hash string
+	/// 
+	/// This is public in order to allow entended functionality. For
+	/// example, (de)serialization to a file.
+	shared string[string] rawStore;
 	
 	///
 	bool create(TDigest)(string name, Hash!TDigest hash) if(isAnyDigest!TDigest)
 	{
-		if(name in lookup)
+		if(name in rawStore)
 			return false;
 		
-		lookup[name] = hash.toString();
+		rawStore[name] = hash.toString();
 		return true;
 	}
 	
 	///
 	bool modify(TDigest)(string name, Hash!TDigest hash) if(isAnyDigest!TDigest)
 	{
-		if(auto pHash = name in lookup)
+		if(auto pHash = name in rawStore)
 		{
 			*pHash = hash.toString();
 			return true;
@@ -41,7 +45,7 @@ class MemoryStore
 	///
 	NullableHash!Digest getHash(string name)
 	{
-		if(auto pHash = name in lookup)
+		if(auto pHash = name in rawStore)
 			return NullableHash!Digest( parseHash(*pHash) );
 		
 		return NullableHash!Digest();
@@ -50,24 +54,24 @@ class MemoryStore
 	///
 	bool remove(string name)
 	{
-		if(name !in lookup)
+		if(name !in rawStore)
 			return false;
 		
-		lookup.remove(name);
+		rawStore.remove(name);
 		return true;
 	}
 	
 	///
 	ulong getUserCount()
 	{
-		return lookup.length;
+		return rawStore.length;
 	}
 	
 	///
 	void wipeEverything()
 	{
-		lookup.destroy();
-		assert(lookup.length == 0);
+		rawStore.destroy();
+		assert(rawStore.length == 0);
 	}
 	
 	///
