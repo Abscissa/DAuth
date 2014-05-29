@@ -77,10 +77,16 @@ will satisfy the optional hasGetUserCount):
 ulong getUserCount();
 ---------------
 +/
-enum bool isUserStore(T, TDigest) = isUserStore!T && isUserStoreImpl!(T, TDigest);
+template isUserStore(T, TDigest)
+{
+	enum bool isUserStore = isUserStore!T && isUserStoreImpl!(T, TDigest);
+}
 
 ///ditto
-enum bool isUserStore(T) = isUserStoreImpl!(T, Digest);
+template isUserStore(T)
+{
+	enum bool isUserStore = isUserStoreImpl!(T, Digest);
+}
 
 private template isUserStoreImpl(T, TDigest)
 {
@@ -115,10 +121,13 @@ ulong getUserCount();
 
 Type T is NOT required to be a valid UserStore.
 +/
-enum hasGetUserCount(T) = is(typeof((){
-	T t;
-	ulong x = t.getUserCount();
-}));
+template hasGetUserCount(T)
+{
+	enum hasGetUserCount = is(typeof((){
+		T t;
+		ulong x = t.getUserCount();
+	}));
+}
 
 /// Convenience alias for Nullable!(Hash!TDigest)
 alias NullableHash(TDigest) = Nullable!(Hash!TDigest);
