@@ -1,7 +1,7 @@
 /// InstaUser - User Account Library for D
 /// Data Store: In Memory
 ///
-/// Main module: $(LINK2 index.html,instauser)$(BR)
+/// Main module: $(LINK2 ../index.html,instauser)$(BR)
 
 module instauser.store.memory;
 
@@ -11,7 +11,15 @@ import std.exception;
 import dauth.core;
 import instauser.core;
 
-///
+/++
+A non-permanent in-memory UserStore. Being memory-only, this will be wiped
+as soon as the program ends or the object gets garbage collected, unless you
+manually saved MemoryStore.rawStore to permanent storage.
+
+If you do need permanent storage (which is likely the case), you should
+use a different UserStore designed for permanemt storage, such as
+instauser.store.mysqln.MySQLNativeStore.
++/
 class MemoryStore
 {
 	/// rawStore[name] == salted hash string
@@ -20,7 +28,7 @@ class MemoryStore
 	/// example, (de)serialization to a file.
 	shared string[string] rawStore;
 	
-	///
+	/// Implement a UserStore: Create a new user, returning false if user already exists.
 	bool create(TDigest)(string name, Hash!TDigest hash) if(isAnyDigest!TDigest)
 	{
 		if(name in rawStore)
@@ -30,7 +38,7 @@ class MemoryStore
 		return true;
 	}
 	
-	///
+	/// Implement a UserStore: Change a user's password, returning false if user doesn't exist.
 	bool modify(TDigest)(string name, Hash!TDigest hash) if(isAnyDigest!TDigest)
 	{
 		if(auto pHash = name in rawStore)
@@ -42,7 +50,7 @@ class MemoryStore
 		return false;
 	}
 	
-	///
+	/// Implement a UserStore: Retreive a user's password hash, returning null if user doesn't exist.
 	NullableHash!Digest getHash(string name)
 	{
 		if(auto pHash = name in rawStore)
@@ -51,7 +59,7 @@ class MemoryStore
 		return NullableHash!Digest();
 	}
 	
-	///
+	/// Implement a UserStore: Permanently delete a user.
 	bool remove(string name)
 	{
 		if(name !in rawStore)
@@ -61,23 +69,24 @@ class MemoryStore
 		return true;
 	}
 	
-	///
+	/// Implement optional UserStore feature: Retrive number of users in the store.
 	ulong getUserCount()
 	{
 		return rawStore.length;
 	}
 	
-	///
+	/// Implement a UserStore: PERMANENTLY DELETES ALL user data in the store.
 	void wipeEverything()
 	{
 		rawStore.destroy();
 		assert(rawStore.length == 0);
 	}
 	
-	///
+	/// Implement a UserStore: Initialize a new store. The store is assumed
+	/// to have already been wiped, or have never previously existed.
 	void init()
 	{
-		// Nothing to do
+		// Don't need to do anything.
 	}
 }
 

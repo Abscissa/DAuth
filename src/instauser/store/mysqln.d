@@ -1,7 +1,7 @@
 /// InstaUser - User Account Library for D
 /// Data Store: MySQL-native
 ///
-/// Main module: $(LINK2 index.html,instauser)$(BR)
+/// Main module: $(LINK2 ../index.html,instauser)$(BR)
 
 module instauser.store.mysqln;
 
@@ -44,8 +44,27 @@ private enum MySQLErrorCode
 	DuplicateEntry = 1062,
 }
 
-/// If Conn is a MySQLConnection, then the user of this class is responsible
-/// for opening/closing the connection.
+/++
+A UserStore utilizing a MySQL database table.
+
+If Conn is a MySQLConnection, then the user of this class is responsible
+for opening/closing the connection.
+
+By default, this uses the following table structure:
+--------------
+CREATE TABLE `users` (
+	`name` varchar(255) NOT NULL,
+	`pass` varchar(255) NOT NULL,
+	PRIMARY KEY  (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+--------------
+
+The table's name and name/pass column names can be customized via this class's
+constructor. You can customize the table further by overriding the init
+function in a subclass, or by not using the init function at all. If you simply
+need additional fields, another option is to store extra user data in a separate
+table linked on `users`.`name`.
++/
 class MySQLNativeStore(Conn) if(is(Conn == MySQLConnection) || is(Conn == MySQLConnectionPool))
 {
 	version(Have_vibe_d) {} else
@@ -56,10 +75,13 @@ class MySQLNativeStore(Conn) if(is(Conn == MySQLConnection) || is(Conn == MySQLC
 		);
 	}
 	
+	/// The raw connection or connection pool. Generally, a connection
+	/// should be obtained through lockConn instead of this directly.
 	Conn conn;
-	protected string table;
-	protected string nameField;
-	protected string passField;
+
+	protected string table;     /// Name of database table to use.
+	protected string nameField; /// Name of column to store user names.
+	protected string passField; /// Name of column to store password hash strings.
 	
 	/++
 	conn: The MySQLConnection or MySQLConnectionPool to use.
@@ -76,6 +98,10 @@ class MySQLNativeStore(Conn) if(is(Conn == MySQLConnection) || is(Conn == MySQLC
 		this.passField = passField;
 	}
 	
+	/// Any functions in subclasses should use this to obtain a database connection.
+	/// For non-pool connections, this will return the actual opened connection.
+	/// For Vibe.d pool-based connections, this will retreive a locked
+	/// connection from the pool.
 	protected MySQLConnection lockConn()
 	{
 		static if(is(Conn == MySQLConnectionPool))
@@ -84,7 +110,7 @@ class MySQLNativeStore(Conn) if(is(Conn == MySQLConnection) || is(Conn == MySQLC
 			return conn;
 	}
 	
-	///
+	/// Implement a UserStore: Create a new user, returning false if user already exists.
 	bool create(TDigest)(string name, Hash!TDigest hash) if(isAnyDigest!TDigest)
 	{
 		static string sql = null;
@@ -111,7 +137,7 @@ class MySQLNativeStore(Conn) if(is(Conn == MySQLConnection) || is(Conn == MySQLC
 		return true;
 	}
 	
-	///
+	/// Implement a UserStore: Change a user's password, returning false if user doesn't exist.
 	bool modify(TDigest)(string name, Hash!TDigest hash) if(isAnyDigest!TDigest)
 	{
 		static string sql = null;
@@ -134,7 +160,7 @@ class MySQLNativeStore(Conn) if(is(Conn == MySQLConnection) || is(Conn == MySQLC
 		return rowsAffected != 0;
 	}
 	
-	///
+	/// Implement a UserStore: Retreive a user's password hash, returning null if user doesn't exist.
 	NullableHash!Digest getHash(string name)
 	{
 		static string sql = null;
@@ -159,7 +185,7 @@ class MySQLNativeStore(Conn) if(is(Conn == MySQLConnection) || is(Conn == MySQLC
 		return NullableHash!Digest( parseHash(results[0][0].toString()) );
 	}
 	
-	///
+	/// Implement a UserStore: Permanently deletes a user.
 	bool remove(string name)
 	{
 		static string sql = null;
@@ -181,7 +207,7 @@ class MySQLNativeStore(Conn) if(is(Conn == MySQLConnection) || is(Conn == MySQLC
 		return rowsAffected != 0;
 	}
 	
-	///
+	/// Implement optional UserStore feature: Retrive number of users in the store.
 	ulong getUserCount()
 	{
 		static string sql = null;
@@ -200,7 +226,7 @@ class MySQLNativeStore(Conn) if(is(Conn == MySQLConnection) || is(Conn == MySQLC
 		return cast(ulong)userCount;
 	}
 	
-	///
+	/// Implement a UserStore: PERMANENTLY DELETES ALL user data in the store.
 	void wipeEverything()
 	{
 		static string sql = null;
@@ -213,7 +239,8 @@ class MySQLNativeStore(Conn) if(is(Conn == MySQLConnection) || is(Conn == MySQLC
 		cmd.execSQL(rowsAffected);
 	}
 	
-	///
+	/// Implement a UserStore: Initialize a new store. The store is assumed
+	/// to have already been wiped, or have never previously existed.
 	void init()
 	{
 		static string sql = null;

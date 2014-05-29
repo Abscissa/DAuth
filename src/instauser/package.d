@@ -15,8 +15,13 @@ Author: Nick Sabalausky
 DMD flags to enable InstaUser unittests:
 	-unittest -version=InstaUser_Unittest -version=Have_mysql_native
 
-DMD flags to enable InstaUser unittests, but silence all non-error output:
-	-unittest -version=InstaUser_Unittest -version=Have_mysql_native -version=InstaUser_Unittest_Quiet
+Add this to silence all non-error output in InstaUser unittests:
+	-version=InstaUser_Unittest_Quiet
+
+Modules:
+$(LINK2 core.html,instauser.core)$(BR)
+$(LINK2 store/memory.html,instauser.store.memory)$(BR)
+$(LINK2 store/mysqln.html,instauser.store.mysqln)$(BR)
 +/
 
 module instauser;
