@@ -802,18 +802,6 @@ bool isPasswordCorrect()(Password password,
 version(DAuth_Unittest)
 unittest
 {
-import std.stdio;
-writeln(makeHash(dupPassword("pass123")).toString());
-
-char[] input = "...".dup;
-Password pass = toPassword(input); // Ref counted with automatic memory zeroing
-
-// Salt is crypto-secure randomized
-string hash1 = makeHash(pass).toString(); // Ex: [SHA512]d93Tp...ULle$my7MSJu...NDtd5RG
-string hash2 = makeHash(pass).toCryptString(); // Ex: $6$d93Tp...ULle$my7MSJu...NDtd5RG
-
-bool ok = isPasswordCorrect(pass, parseHash(hash1));
-
 	// For validity of sanity checks, these sha/md5 and base64 strings
 	// were NOT generated using Phobos.
 	auto plainText1        = dupPassword("hello world");
