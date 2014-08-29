@@ -115,6 +115,7 @@ Digest defaultDigestFromCryptCode(string digestCode)
 {
 	switch(digestCode)
 	{
+	case "":   throw new UnknownDigestException(`Old crypt-DES not currently supported`);
 	case "1":  return new MD5Digest();
 	case "5":  return new SHA256Digest();
 	case "6":  return new SHA512Digest();
@@ -649,7 +650,7 @@ Hash!Digest parseHash(string str,
 	enforceEx!ConvException(!str.empty);
 	if(str[0] == '[')
 		return parseDAuthHash(str, digestFromDAuthCode);
-	else if(str[0] == '$')
+	else if(str[0] == '$' || str.length == 13)
 		return parseCryptHash(str, digestFromCryptCode);
 	
 	throw new ConvException("Hash string is neither valid DAuth-style nor crypt-style");
@@ -694,9 +695,25 @@ Hash!Digest parseCryptHash(string str,
 {
 	// No need to mess with UTF
 	auto bytes = cast(immutable(ubyte)[]) str;
+
+	enforceEx!ConvException(!bytes.empty);
+	
+	// Old crypt-DES style?
+	if(bytes[0] != cast(ubyte)'$' && bytes.length == 13)
+	{
+		auto salt = bytes[0..2];
+		auto hash = bytes[2..$];
+
+		// Construct Hash
+		Hash!Digest result;
+		result.salt   = salt.dup;
+		result.hash   = hash.dup;
+		result.digest = digestFromCode(null);
+		
+		return result;
+	}
 	
 	// Parse initial '$'
-	enforceEx!ConvException(!bytes.empty);
 	enforceEx!ConvException(bytes.front == cast(ubyte)'$');
 	bytes.popFront();
 	
@@ -919,6 +936,10 @@ unittest
 	assert(parseHash( result2_512.toCryptString() ).toString()      == parseCryptHash( result2_512.toCryptString() ).toString());
 	assert(parseHash( result2_512.toCryptString() ).toCryptString() == parseCryptHash( result2_512.toCryptString() ).toCryptString());
 	
+	auto desCryptHash = "sa5JEXtYx/rm6";
+	assertThrown!UnknownDigestException( parseHash(desCryptHash) );
+	assert(collectExceptionMsg( parseHash(desCryptHash) ).canFind("DES"));
+
 	unitlog("Testing isPasswordCorrect");
 	assert(isPasswordCorrect     (plainText1, result2));
 	assert(isPasswordCorrect!SHA1(plainText1, result2.hash, result2.salt));
