@@ -5,7 +5,7 @@ DAuth - Authentication Utility for D
 
 DAuth (soon to be rebranded as "InstaUser Basic") is a [salted password hash](http://en.wikipedia.org/wiki/Salt_%28cryptography%29) authentication library for [D](http://dlang.org). It provides a simple, yet flexible API. With it, your software can easily incorporate user accounts with reliable, upgradable security.
 
-You can have as much or as little control as you need, making DAuth suitable for both new projects and interfacing with any existing hashed-password store.
+You can have as much or as little control as you need. This makes DAuth suitable for both new projects and interfacing with any existing hashed-password store.
 
 By default, DAuth uses known-good hashing and randomization algorithms (currently SHA-512 and Hash_DRBG), but it accepts any [Phobos](http://dlang.org/phobos/)-compatible [hash digest](http://dlang.org/phobos/std_digest_digest.html) or [random number generator](http://dlang.org/phobos/std_random.html).
 
