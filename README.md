@@ -1,13 +1,17 @@
 DAuth - Authentication Utility for D
 ====================================
 
-[[Changelog](https://github.com/Abscissa/DAuth/blob/master/CHANGELOG.md)] [[API Reference](http://semitwist.com/dauth/)]
+[[ChangeLog](https://github.com/Abscissa/DAuth/blob/master/CHANGELOG.md)] [[API Reference](http://semitwist.com/dauth/)]
 
 DAuth (soon to be rebranded as "InstaUser Basic") is a simple [salted password hash](http://en.wikipedia.org/wiki/Salt_%28cryptography%29) authentication library for [D](http://dlang.org). It provides a simple, yet flexible API, so your software can easily incorporate secure, upgradable user accounts.
 
 By default, DAuth uses known-good hashing and randomization algorithms (currently SHA-512 and Hash_DRBG), but it accepts any [Phobos](http://dlang.org/phobos/)-compatible [hash digest](http://dlang.org/phobos/std_digest_digest.html) or [random number generator](http://dlang.org/phobos/std_random.html). You can have as much or as little control as you need, making DAuth suitable for both new projects and interfacing with any existing hashed-password store.
 
 DAuth's main interface is makeHash and isPasswordCorrect:
+
+- ```makeHash(Password)```: Generates a salted hash for a password. The salt, the hashing ("digest") algorithm, and the salt/password combing ("salter") algorithm can optionally be provided, or left as default. By default, the salt is automatically generated at random using a cryptographically secure psuedorandom number generator.
+
+- ```isPasswordCorrect(Password, Hash)```: Validates a password against an existing salted hash. As with ```makeHash```, everything is optionally customizable. The hashes are compared using a ["length-constant" time](https://crackstation.net/hashing-security.htm) algorithm to thwart timing-based attacks.
 
 ```d
 import dauth;
@@ -23,29 +27,25 @@ bool ok1 = isPasswordCorrect(pass, parseHash("[SHA512]d93Tp...ULle$my7MSJu...NDt
 bool ok2 = isPasswordCorrect(pass, parseHash("$6$d93Tp...ULle$my7MSJu...NDtd5RG"));
 ```
 
-- ```makeHash(Password)```: Generates a salted hash for a password. The salt, the hashing ("digest") algorithm, and the salt/password combing ("salter") algorithm can optionally be provided, or left as default. By default, the salt is automatically generated at random using a cryptographically secure psuedorandom number generator.
+The library provides a forward-compatible string-based hash format for easy storage and retrieval using any digest type. It also has native support for Unix [crypt(3)](https://en.wikipedia.org/wiki/Crypt_%28C%29)-style hash strings for MD5, SHA-256 and SHA-512.
 
-- ```isPasswordCorrect(Password, Hash)```: Validates a password against an existing salted hash. As with ```makeHash```, everything is optionally customizable. The hashes are compared using a ["length-constant" time](https://crackstation.net/hashing-security.htm) algorithm to thwart timing-based attacks.
-
-The library also provides a forward-compatible string-based hash format for easy storage and retrieval. Additionally, there is a [```dauth.random```](http://semitwist.com/dauth/random.html) module with functions for randomly generating [salts](http://semitwist.com/dauth/random.html#randomSalt), [passwords](http://semitwist.com/dauth/random.html#randomPassword) and [single-use tokens](http://semitwist.com/dauth/random.html#randomToken):
+Additionally, there is a [```dauth.random```](http://semitwist.com/dauth/random.html) module with functions for randomly generating [salts](http://semitwist.com/dauth/random.html#randomSalt), [passwords](http://semitwist.com/dauth/random.html#randomPassword) and [single-use tokens](http://semitwist.com/dauth/random.html#randomToken):
 
 ```d
 // All parameters are optional: Desired length, random number generator,
 // token strength, and chars permitted in the password:
 
-Password pass1 = randomPassword();
-ubyte[]  salt1 = randomSalt();
-string   singleUse1 = randomToken();
+Password pass = randomPassword();
+ubyte[]  salt = randomSalt();
+string   singleUse = randomToken();
 
 Password pass2 = randomPassword!DefaultCryptoRand(20, defaultPasswordChars);
 ubyte[]  salt2 = randomSalt!DefaultCryptoRand(32);
 string   singleUse2 = randomToken!DefaultCryptoRand(defaultTokenStrength);
 ```
 
-In addition to its own extensible hash string format (supporting any digest type), DAuth also has native support for Unix [crypt(3)](https://en.wikipedia.org/wiki/Crypt_%28C%29)-style hash strings for MD5, SHA-256 and SHA-512.
-
-Typical Usage
--------------
+Typical Usage Examples
+----------------------
 See also: [API Reference](http://semitwist.com/dauth/)
 
 ```d
