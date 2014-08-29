@@ -30,7 +30,7 @@ bool ok1 = isSameHash(pass, parseHash("[SHA512]d93Tp...ULle$my7MSJu...NDtd5RG"))
 bool ok2 = isSameHash(pass, parseHash("$6$d93Tp...ULle$my7MSJu...NDtd5RG"));
 ```
 
-The library provides a forward-compatible string-based hash format for easy storage and retrieval using any hash digest type. It also has native support for Unix [crypt(3)](https://en.wikipedia.org/wiki/Crypt_%28C%29)-style hash strings for MD5, SHA-256 and SHA-512.
+The library provides a forward-compatible string-based hash format for easy storage and retrieval using any hash digest type. It also has native support for Unix [crypt(3)](https://en.wikipedia.org/wiki/Crypt_%28C%29)-style hash strings for MD5, SHA-256 and SHA-512. To avoid accidental usage of low-security, hash digests which DAuth knows to provide inferior secury (such as MD5) require a clearly-named compiler flag to be used: ```-version=DAuth_AllowWeakSecurity```.
 
 Additionally, there is a [```dauth.random```](http://semitwist.com/dauth/random.html) module with functions for randomly generating [salts](http://semitwist.com/dauth/random.html#randomSalt), [passwords](http://semitwist.com/dauth/random.html#randomPassword) and [single-use tokens](http://semitwist.com/dauth/random.html#randomToken):
 
@@ -111,6 +111,10 @@ string loadUserDigest(string user) {...}
 
 void setPassword(string user, char[] pass)
 {
+	// DAuth knows that MinstdRand and MD5 do NOT provide crypto-grade
+	// security, so it won't allow the following to compile unless you
+	// include the compiler flag: -version=DAuth_AllowWeakSecurity
+	
 	// Note: This randomizer is not actually suitable for crypto purposes.
 	static MinstdRand rand;
 	auto salt = randomSalt(rand, 64);
