@@ -7,6 +7,7 @@ v0.6.1 - TBD - crypt(3)
 -------------------
 - **Enhancement:** Supports DMD 2.066.0. (Now supports DMD 2.064.2 through 2.066.0.)
 - **Enhancement:** Supports [crypt(3)](https://en.wikipedia.org/wiki/Crypt_(C))-style hash strings. Currently supports ```$1$``` (MD5), ```$5$``` (SHA-256) and ```$6$``` (SHA-512).
+- **Change:** Rename ```isPasswordCorrect``` to ```isSameHash```. Old name temporarily maintained as an alias.
 - **Change:** Removed ```dauth.hashdrbg.isSomeStream``` because it's named wrong, unused, and not particularly useful anyway.
 
 v0.6.0 - 2014/05/22 - SHA-2, Hash_DRBG and Separate Modules

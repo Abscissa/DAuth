@@ -9,11 +9,11 @@ You can have as much or as little control as you need. This makes DAuth suitable
 
 By default, DAuth uses known-good hashing and randomization algorithms (currently SHA-512 and Hash_DRBG), but it accepts any [Phobos](http://dlang.org/phobos/)-compatible [hash digest](http://dlang.org/phobos/std_digest_digest.html) or [random number generator](http://dlang.org/phobos/std_random.html).
 
-DAuth's main interface is makeHash and isPasswordCorrect:
+DAuth's main interface is makeHash and isSameHash:
 
 - ```makeHash(Password)```: Generates a salted hash for a password.
 
-- ```isPasswordCorrect(Password, Hash)```: Validates a password against an existing hash. The hashes are compared using a ["length-constant" time](https://crackstation.net/hashing-security.htm) algorithm to thwart timing-based attacks.
+- ```isSameHash(Password, Hash)```: Validates a password against an existing hash. The hashes are compared using a ["length-constant" time](https://crackstation.net/hashing-security.htm) algorithm to thwart timing-based attacks.
 
 ```d
 import dauth;
@@ -25,9 +25,9 @@ Password pass = toPassword(input); // Ref counted with automatic memory zeroing
 string hash1 = makeHash(pass).toString(); // Ex: [SHA512]d93Tp...ULle$my7MSJu...NDtd5RG
 string hash2 = makeHash(pass).toCryptString(); // Ex: $6$d93Tp...ULle$my7MSJu...NDtd5RG
 
-// isPasswordCorrect: Compared using "length-constant" time
-bool ok1 = isPasswordCorrect(pass, parseHash("[SHA512]d93Tp...ULle$my7MSJu...NDtd5RG"));
-bool ok2 = isPasswordCorrect(pass, parseHash("$6$d93Tp...ULle$my7MSJu...NDtd5RG"));
+// isSameHash: Compared using "length-constant" time
+bool ok1 = isSameHash(pass, parseHash("[SHA512]d93Tp...ULle$my7MSJu...NDtd5RG"));
+bool ok2 = isSameHash(pass, parseHash("$6$d93Tp...ULle$my7MSJu...NDtd5RG"));
 ```
 
 The library provides a forward-compatible string-based hash format for easy storage and retrieval using any hash digest type. It also has native support for Unix [crypt(3)](https://en.wikipedia.org/wiki/Crypt_%28C%29)-style hash strings for MD5, SHA-256 and SHA-512.
@@ -67,7 +67,7 @@ void setPassword(string user, char[] pass)
 bool validateUser(string user, char[] pass)
 {
 	string hashString = loadUserPassword(user);
-	return isPasswordCorrect(toPassword(pass), parseHash(hashString));
+	return isSameHash(toPassword(pass), parseHash(hashString));
 }
 ```
 
@@ -89,7 +89,7 @@ To ensure compatibility with both existing infrastructure and future cryptograph
 
 - Hashes and salts can be stored in any way or format desired. This is because the Hash struct returned by ```makeHash()``` and ```parseHash()``` provides easy access to the hash, the salt, and the digest used.
 
-- The method of combining the salt and raw password can be user-defined (via the optional ```salter``` parameter of ```makeHash()``` and ```isPasswordCorrect()```).
+- The method of combining the salt and raw password can be user-defined (via the optional ```salter``` parameter of ```makeHash()``` and ```isSameHash()```).
 
 - ```Hash!T.toString()``` supports [OutputRange](http://dlang.org/phobos/std_range.html#isOutputRange) sinks, to avoid unnecessary allocations.
 
@@ -127,7 +127,7 @@ bool validateUser(string user, char[] pass)
 	ubyte[] salt = loadUserSalt(user);
 	ensure(loadUserDigest(user) == "MD5");
 	
-	return isPasswordCorrect!MD5(pass, hash, salt);
+	return isSameHash!MD5(pass, hash, salt);
 }
 ```
 

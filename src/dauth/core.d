@@ -130,7 +130,7 @@ Digest defaultDigestFromCryptCode(string digestCode)
 	}
 }
 
-/// Default salter for 'makeHash' and 'isPasswordCorrect'.
+/// Default salter for 'makeHash' and 'isSameHash'.
 void defaultSalter(TDigest)(ref TDigest digest, Password password, Salt salt)
 	if(isAnyDigest!TDigest)
 {
@@ -221,7 +221,7 @@ private void validateStrength(Digest digest)
 
 /// Thrown whenever a digest type cannot be determined.
 /// For example, when the provided (or default) 'digestCodeOfObj' or 'digestFromCode'
-/// delegates fail to find a match. Or when passing isPasswordCorrect a
+/// delegates fail to find a match. Or when passing isSameHash a
 /// Hash!Digest with a null 'digest' member (which prevents it from determining
 /// the correct digest to match with).
 class UnknownDigestException : Exception
@@ -744,7 +744,7 @@ Hash!Digest parseCryptHash(string str,
 /// If sHash is a Hash!Digest, then sHash.digest MUST be non-null. Otherwise
 /// this function will have no other way to determine what digest to match
 /// against, and an UnknownDigestException will be thrown.
-bool isPasswordCorrect(TDigest = DefaultDigest)(Password password, Hash!TDigest sHash,
+bool isSameHash(TDigest = DefaultDigest)(Password password, Hash!TDigest sHash,
 	Salter!TDigest salter = toDelegate(&defaultSalter!TDigest))
 	if(isDigest!TDigest)
 {
@@ -753,7 +753,7 @@ bool isPasswordCorrect(TDigest = DefaultDigest)(Password password, Hash!TDigest 
 }
 
 ///ditto
-bool isPasswordCorrect(TDigest = Digest)(Password password, Hash!TDigest sHash,
+bool isSameHash(TDigest = Digest)(Password password, Hash!TDigest sHash,
 	Salter!Digest salter = toDelegate(&defaultSalter!Digest))
 	if(is(TDigest : Digest))
 {
@@ -773,7 +773,7 @@ bool isPasswordCorrect(TDigest = Digest)(Password password, Hash!TDigest sHash,
 }
 
 ///ditto
-bool isPasswordCorrect(TDigest = DefaultDigest)
+bool isSameHash(TDigest = DefaultDigest)
 	(Password password, DigestType!TDigest hash, Salt salt,
 		Salter!TDigest salter = toDelegate(&defaultSalter!TDigest))
 	if(isDigest!TDigest)
@@ -783,7 +783,7 @@ bool isPasswordCorrect(TDigest = DefaultDigest)
 }
 
 ///ditto
-bool isPasswordCorrect()(Password password,
+bool isSameHash()(Password password,
 	ubyte[] hash, Salt salt, Digest digest = new DefaultDigestClass(),
 	Salter!Digest salter = toDelegate(&defaultSalter!Digest))
 {
@@ -792,12 +792,19 @@ bool isPasswordCorrect()(Password password,
 }
 
 ///ditto
-bool isPasswordCorrect()(Password password,
+bool isSameHash()(Password password,
 	ubyte[] hash, Salt salt, Salter!Digest salter)
 {
 	auto testHash = makeHash(new DefaultDigestClass(), password, salt, salter);
 	return lengthConstantEquals(testHash.hash, hash);
 }
+
+/++
+Alias for backwards compatibility.
+
+isPasswordCorrect will become deprecated in a future version. Use isSameHash instead.
++/
+alias isPasswordCorrect = isSameHash;
 
 version(DAuth_Unittest)
 unittest
@@ -946,55 +953,55 @@ unittest
 	assertThrown!UnknownDigestException( parseHash(desCryptHash) );
 	assert(collectExceptionMsg( parseHash(desCryptHash) ).canFind("DES"));
 
-	unitlog("Testing isPasswordCorrect");
-	assert(isPasswordCorrect     (plainText1, result2));
-	assert(isPasswordCorrect!SHA1(plainText1, result2.hash, result2.salt));
-	assert(isPasswordCorrect     (plainText1, result2.hash, result2.salt, new SHA1Digest()));
+	unitlog("Testing isSameHash");
+	assert(isSameHash     (plainText1, result2));
+	assert(isSameHash!SHA1(plainText1, result2.hash, result2.salt));
+	assert(isSameHash     (plainText1, result2.hash, result2.salt, new SHA1Digest()));
 
-	assert(isPasswordCorrect!SHA1(plainText1, result2AltSalter, &altSalter!SHA1));
-	assert(isPasswordCorrect!SHA1(plainText1, result2AltSalter.hash, result2AltSalter.salt, &altSalter!SHA1));
-	assert(isPasswordCorrect     (plainText1, result2AltSalter.hash, result2AltSalter.salt, new SHA1Digest(), &altSalter!Digest));
+	assert(isSameHash!SHA1(plainText1, result2AltSalter, &altSalter!SHA1));
+	assert(isSameHash!SHA1(plainText1, result2AltSalter.hash, result2AltSalter.salt, &altSalter!SHA1));
+	assert(isSameHash     (plainText1, result2AltSalter.hash, result2AltSalter.salt, new SHA1Digest(), &altSalter!Digest));
 
-	assert(!isPasswordCorrect     (dupPassword("bad pass"), result2));
-	assert(!isPasswordCorrect!SHA1(dupPassword("bad pass"), result2.hash, result2.salt));
-	assert(!isPasswordCorrect     (dupPassword("bad pass"), result2.hash, result2.salt, new SHA1Digest()));
+	assert(!isSameHash     (dupPassword("bad pass"), result2));
+	assert(!isSameHash!SHA1(dupPassword("bad pass"), result2.hash, result2.salt));
+	assert(!isSameHash     (dupPassword("bad pass"), result2.hash, result2.salt, new SHA1Digest()));
 
-	assert(!isPasswordCorrect!SHA1(dupPassword("bad pass"), result2AltSalter, &altSalter!SHA1));
-	assert(!isPasswordCorrect!SHA1(dupPassword("bad pass"), result2AltSalter.hash, result2AltSalter.salt, &altSalter!SHA1));
-	assert(!isPasswordCorrect     (dupPassword("bad pass"), result2AltSalter.hash, result2AltSalter.salt, new SHA1Digest(), &altSalter!Digest));
+	assert(!isSameHash!SHA1(dupPassword("bad pass"), result2AltSalter, &altSalter!SHA1));
+	assert(!isSameHash!SHA1(dupPassword("bad pass"), result2AltSalter.hash, result2AltSalter.salt, &altSalter!SHA1));
+	assert(!isSameHash     (dupPassword("bad pass"), result2AltSalter.hash, result2AltSalter.salt, new SHA1Digest(), &altSalter!Digest));
 	
 	Hash!SHA1Digest ooHashSHA1Digest;
 	ooHashSHA1Digest.salt = result2.salt;
 	ooHashSHA1Digest.hash = result2.hash;
 	ooHashSHA1Digest.digest = new SHA1Digest();
-	assert( isPasswordCorrect(plainText1, ooHashSHA1Digest) );
+	assert( isSameHash(plainText1, ooHashSHA1Digest) );
 	ooHashSHA1Digest.digest = null;
-	assert( isPasswordCorrect(plainText1, ooHashSHA1Digest) );
+	assert( isSameHash(plainText1, ooHashSHA1Digest) );
 	
 	Hash!Digest ooHashDigest;
 	ooHashDigest.salt = result2.salt;
 	ooHashDigest.hash = result2.hash;
 	ooHashDigest.digest = new SHA1Digest();
-	assert( isPasswordCorrect(plainText1, ooHashDigest) );
+	assert( isSameHash(plainText1, ooHashDigest) );
 	ooHashDigest.digest = null;
-	assertThrown!UnknownDigestException( isPasswordCorrect(plainText1, ooHashDigest) );
+	assertThrown!UnknownDigestException( isSameHash(plainText1, ooHashDigest) );
 	
-	assert( isPasswordCorrect(plainText1, parseHash(result2.toString())) );
+	assert( isSameHash(plainText1, parseHash(result2.toString())) );
 
 	auto wrongSalt = result2;
 	wrongSalt.salt = wrongSalt.salt[4..$-1];
 	
-	assert(!isPasswordCorrect     (plainText1, wrongSalt));
-	assert(!isPasswordCorrect!SHA1(plainText1, wrongSalt.hash, wrongSalt.salt));
-	assert(!isPasswordCorrect     (plainText1, wrongSalt.hash, wrongSalt.salt, new SHA1Digest()));
+	assert(!isSameHash     (plainText1, wrongSalt));
+	assert(!isSameHash!SHA1(plainText1, wrongSalt.hash, wrongSalt.salt));
+	assert(!isSameHash     (plainText1, wrongSalt.hash, wrongSalt.salt, new SHA1Digest()));
 
 	Hash!MD5 wrongDigest;
 	wrongDigest.salt = result2.salt;
 	wrongDigest.hash = cast(ubyte[16])result2.hash[0..16];
 	
-	assert(!isPasswordCorrect    (plainText1, wrongDigest));
-	assert(!isPasswordCorrect!MD5(plainText1, wrongDigest.hash, wrongDigest.salt));
-	assert(!isPasswordCorrect    (plainText1, wrongDigest.hash, wrongDigest.salt, new MD5Digest()));
+	assert(!isSameHash    (plainText1, wrongDigest));
+	assert(!isSameHash!MD5(plainText1, wrongDigest.hash, wrongDigest.salt));
+	assert(!isSameHash    (plainText1, wrongDigest.hash, wrongDigest.salt, new MD5Digest()));
 }
 
 /++
