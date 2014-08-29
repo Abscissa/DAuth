@@ -59,7 +59,7 @@ alias DefaultDigest = SHA512; /// Default is SHA-512
 alias DefaultDigestClass = WrapperDigest!DefaultDigest; /// OO-style version of 'DefaultDigest'.
 alias TokenBase64 = Base64Impl!('-', '_', '~'); /// Implementation of Base64 engine used for tokens.
 
-/// Default implementation of 'digestCodeOfObj'.
+/// Default implementation of 'digestCodeOfObj' for DAuth-style hash strings.
 /// See 'Hash!(TDigest).toString' for more info.
 string defaultDigestCodeOfObj(Digest digest)
 {
@@ -77,7 +77,7 @@ string defaultDigestCodeOfObj(Digest digest)
 		throw new UnknownDigestException("Unknown digest type");
 }
 
-/// Default implementation of 'digestCodeOfObj'.
+/// Default implementation of 'digestFromCode' for DAuth-style hash strings.
 /// See 'parseHash' for more info.
 Digest defaultDigestFromCode(string digestCode)
 {
@@ -93,6 +93,31 @@ Digest defaultDigestFromCode(string digestCode)
 	case "SHA512":     return new SHA512Digest();
 	case "SHA512_224": return new SHA512_224Digest();
 	case "SHA512_256": return new SHA512_256Digest();
+	default:
+		throw new UnknownDigestException("Unknown digest code");
+	}
+}
+
+/// Default implementation of 'digestCodeOfObj' for Unix crypt-style hash strings.
+/// See 'Hash!(TDigest).toString' for more info.
+string defaultDigestCryptCodeOfObj(Digest digest)
+{
+	if     (cast( MD5Digest    )digest) return "1";
+	else if(cast( SHA256Digest )digest) return "5";
+	else if(cast( SHA512Digest )digest) return "6";
+	else
+		throw new UnknownDigestException("Unknown digest type");
+}
+
+/// Default implementation of 'digestFromCode' for Unix crypt-style hash strings.
+/// See 'parseHash' for more info.
+Digest defaultDigestFromCryptCode(string digestCode)
+{
+	switch(digestCode)
+	{
+	case "1":  return new MD5Digest();
+	case "5":  return new SHA256Digest();
+	case "6":  return new SHA512Digest();
 	default:
 		throw new UnknownDigestException("Unknown digest code");
 	}
@@ -461,6 +486,42 @@ struct Hash(TDigest) if(isAnyDigest!TDigest)
 		sink.put('$');
 		Base64.encode(hash, sink);
 	}
+
+	/++
+	Just like toString, but instead of standard DAuth-style format, the
+	output string is in the crypt(3)-style format.
+	
+	The crypt(3) format does not support all hash types, and DAuth doesn't
+	necessarily support all possible forms of crypt(3) hashes (although it
+	does strive to support as many as possible).
+	
+	DAuth currently supports crypt(3)-style format for MD5, SHA256 and
+	SHA512 hashes. Other hashes (unless manually handled by a custom
+	digestCodeOfObj) will cause an UnknownDigestException to be thrown.
+	
+	The default digestCodeOfObj for this function is defaultDigestCryptCodeOfObj.
+	
+	See also: $(LINK https://en.wikipedia.org/wiki/Crypt_%28C%29)
+	+/
+	string toCryptString(string delegate(Digest) digestCodeOfObj = toDelegate(&defaultDigestCryptCodeOfObj))
+	{
+		Appender!string sink;
+		toCryptString(sink, digestCodeOfObj);
+		return sink.data;
+	}
+
+	///ditto
+	void toCryptString(Sink)(ref Sink sink,
+		string delegate(Digest) digestCodeOfObj = toDelegate(&defaultDigestCryptCodeOfObj))
+		if(isOutputRange!(Sink, const(char)))
+	{
+		sink.put('$');
+		sink.put(getDigestCode(digestCodeOfObj, digest));
+		sink.put('$');
+		Base64.encode(salt, sink);
+		sink.put('$');
+		Base64.encode(hash, sink);
+	}
 }
 
 /++
@@ -540,6 +601,14 @@ private Hash!TDigest makeHashImpl(TDigest)
 	return ret;
 }
 
+/// Various supported formats of hash strings
+enum HashStringFormat
+{
+	any,    /// Any supported format
+	dauth,  /// DAuth-style. Ex: "[SHA512]salt$hash"
+	crypt,  /// Unix crypt-style. Ex: "$6$salt$hash"
+}
+
 /// Parses a string that was encoded by Hash.toString.
 ///
 /// Only OO-style digests are used since the digest is specified in the string
@@ -548,9 +617,13 @@ private Hash!TDigest makeHashImpl(TDigest)
 /// Throws ConvException if the string is malformed.
 ///
 /// To support additional digests besides the built-in (Phobos's CRC32, MD5,
-/// RIPEMD160 and SHA), supply a custom delegate for digestFromCode.
+/// RIPEMD160 and SHA), supply a custom delegate for digestFromDAuthCode.
 /// You can defer to DAuth's defaultDigestFromCode to handle the
 /// built-in digests.
+///
+/// Similarly, to extend crypt(3)-style to support additional digests beyond
+/// DAuth's crypt(3) support, supply a custom delegate for digestFromCryptCode.
+/// The default implementation is defaultDigestFromCryptCode.
 ///
 /// Example:
 /// -------------------
@@ -578,6 +651,21 @@ private Hash!TDigest makeHashImpl(TDigest)
 /// }
 /// -------------------
 Hash!Digest parseHash(string str,
+	HashStringFormat format = HashStringFormat.any,
+	Digest delegate(string) digestFromDAuthCode = toDelegate(&defaultDigestFromCode),
+	Digest delegate(string) digestFromCryptCode = toDelegate(&defaultDigestFromCryptCode))
+{
+	enforceEx!ConvException(!str.empty);
+	if(str[0] == '[')
+		return parseDAuthHash(str, digestFromDAuthCode);
+	else if(str[0] == '$')
+		return parseCryptHash(str, digestFromCryptCode);
+	
+	throw new ConvException("Hash string is neither valid DAuth-style nor crypt-style");
+}
+
+///ditto
+Hash!Digest parseDAuthHash(string str,
 	Digest delegate(string) digestFromCode = toDelegate(&defaultDigestFromCode))
 {
 	// No need to mess with UTF
@@ -599,6 +687,34 @@ Hash!Digest parseHash(string str,
 	enforceEx!ConvException( !splitDollar[0].empty && !splitDollar[1].empty && !splitDollar[2].empty );
 	auto salt = splitDollar[0];
 	auto hash = splitDollar[2];
+	
+	// Construct Hash
+	Hash!Digest result;
+	result.salt   = Base64.decode(salt);
+	result.hash   = Base64.decode(hash);
+	result.digest = digestFromCode(cast(string)digestCode);
+	
+	return result;
+}
+
+///ditto
+Hash!Digest parseCryptHash(string str,
+	Digest delegate(string) digestFromCode = toDelegate(&defaultDigestFromCryptCode))
+{
+	// No need to mess with UTF
+	auto bytes = cast(immutable(ubyte)[]) str;
+	
+	// Parse initial '$'
+	enforceEx!ConvException(!bytes.empty);
+	enforceEx!ConvException(bytes.front == cast(ubyte)'$');
+	bytes.popFront();
+	
+	// Split digest code, salt and hash
+	auto parts = bytes.splitter('$').array();
+	enforceEx!ConvException(parts.length == 3);
+	auto digestCode = parts[0];
+	auto salt       = parts[1];
+	auto hash       = parts[2];
 	
 	// Construct Hash
 	Hash!Digest result;
@@ -672,25 +788,33 @@ bool isPasswordCorrect()(Password password,
 version(DAuth_Unittest)
 unittest
 {
-	// For validity of sanity checks, these sha and base64 strings
+	// For validity of sanity checks, these sha/md5 and base64 strings
 	// were NOT generated using Phobos.
 	auto plainText1        = dupPassword("hello world");
+	enum md5Hash1          = cast(ubyte[16]) x"5eb63bbbe01eeed093cb22bb8f5acdc3";
+	enum md5Hash1Base64    = "XrY7u+Ae7tCTyyK7j1rNww==";
 	enum sha1Hash1         = cast(ubyte[20]) x"2aae6c35c94fcfb415dbe95f408b9ce91ee846ed";
 	enum sha1Hash1Base64   = "Kq5sNclPz7QV2+lfQIuc6R7oRu0=";
 	enum sha512Hash1       = cast(ubyte[64]) x"309ecc489c12d6eb4cc40f50c902f2b4d0ed77ee511a7c7a9bcd3ca86d4cd86f989dd35bc5ff499670da34255b45b0cfd830e81f605dcf7dc5542e93ae9cd76f";
 	enum sha512Hash1Base64 = "MJ7MSJwS1utMxA9QyQLytNDtd+5RGnx6m808qG1M2G+YndNbxf9JlnDaNCVbRbDP2DDoH2Bdz33FVC6TrpzXbw==";
 
 	auto plainText2        = dupPassword("some salt");
+	enum md5Hash2          = cast(ubyte[16]) x"befbc24b5c6a74591c0d8e6397b8a398";
+	enum md5Hash2Base64    = "vvvCS1xqdFkcDY5jl7ijmA==";
 	enum sha1Hash2         = cast(ubyte[20]) x"78bc8b0e186b0aa698f12dc27736b492e4dacfc8";
 	enum sha1Hash2Base64   = "eLyLDhhrCqaY8S3Cdza0kuTaz8g=";
 	enum sha512Hash2       = cast(ubyte[64]) x"637246608760dc79f00d3ad4fd26c246bb217e10f811cdbf6fe602c3981e98b8cadacadc452808ae393ac46e8a7e967aa99711d7fd7ed6c055264787f8043693";
 	enum sha512Hash2Base64 = "Y3JGYIdg3HnwDTrU/SbCRrshfhD4Ec2/b+YCw5gemLjK2srcRSgIrjk6xG6KfpZ6qZcR1/1+1sBVJkeH+AQ2kw==";
 	
 	unitlog("Sanity checking unittest's data");
+	assert(md5Of(plainText1.data) == md5Hash1);
+	assert(md5Of(plainText2.data) == md5Hash2);
 	assert(sha1Of(plainText1.data) == sha1Hash1);
 	assert(sha1Of(plainText2.data) == sha1Hash2);
 	assert(sha512Of(plainText1.data) == sha512Hash1);
 	assert(sha512Of(plainText2.data) == sha512Hash2);
+	assert(Base64.encode(md5Hash1) == md5Hash1Base64);
+	assert(Base64.encode(md5Hash2) == md5Hash2Base64);
 	assert(Base64.encode(sha1Hash1) == sha1Hash1Base64);
 	assert(Base64.encode(sha1Hash2) == sha1Hash2Base64);
 	assert(Base64.encode(sha512Hash1) == sha512Hash1Base64);
@@ -702,11 +826,21 @@ unittest
 	result1.salt = cast(Salt)               sha1Hash2;
 	assert( result1.toString() == text("[SHA1]", sha1Hash2Base64, "$", sha1Hash1Base64) );
 
+	Hash!MD5 result1_md5;
+	result1_md5.hash = cast(AnyDigestType!MD5) md5Hash1;
+	result1_md5.salt = cast(Salt)              md5Hash2;
+	assert( result1_md5.toString() == text("[MD5]", md5Hash2Base64, "$", md5Hash1Base64) );
+
 	Hash!SHA512 result1_512;
 	result1_512.hash = cast(AnyDigestType!SHA512) sha512Hash1;
 	result1_512.salt = cast(Salt)                 sha512Hash2;
 	assert( result1_512.toString() == text("[SHA512]", sha512Hash2Base64, "$", sha512Hash1Base64) );
 	
+	unitlog("Testing Hash.toString - crypt(3)");
+	assertThrown!UnknownDigestException( result1.toCryptString() );
+	assert( result1_md5.toCryptString() == text("$1$", md5Hash2Base64,    "$", md5Hash1Base64) );
+	assert( result1_512.toCryptString() == text("$6$", sha512Hash2Base64, "$", sha512Hash1Base64) );
+
 	unitlog("Testing makeHash([digest,] pass, salt [, salter])");
 	void altSalter(TDigest)(ref TDigest digest, Password password, Salt salt)
 	{
@@ -769,12 +903,30 @@ unittest
 	assert(resultRand1.hash != resultRand2.hash);
 
 	unitlog("Testing parseHash(void)");
-	auto result2Parsed = parseHash( result2.toString() );
-	assert(result2.salt       == result2Parsed.salt);
-	assert(result2.hash       == result2Parsed.hash);
-	assert(result2.toString() == result2Parsed.toString());
+	auto result2Parsed = parseDAuthHash( result2_512.toString() );
+	assert(result2_512.salt       == result2Parsed.salt);
+	assert(result2_512.hash       == result2Parsed.hash);
+	assert(result2_512.toString() == result2Parsed.toString());
 
 	assert(makeHash(result2Parsed.digest, plainText1, result2Parsed.salt) == result2Parsed);
+	assertThrown!ConvException(parseDAuthHash( result2_512.toCryptString() ));
+	assert(parseHash( result2_512.toString() ).salt            == parseDAuthHash( result2_512.toString() ).salt);
+	assert(parseHash( result2_512.toString() ).hash            == parseDAuthHash( result2_512.toString() ).hash);
+	assert(parseHash( result2_512.toString() ).toString()      == parseDAuthHash( result2_512.toString() ).toString());
+	assert(parseHash( result2_512.toString() ).toCryptString() == parseDAuthHash( result2_512.toString() ).toCryptString());
+	
+	unitlog("Testing parseHash(void) - crypt(3)");
+	auto result2ParsedCrypt = parseCryptHash( result2_512.toCryptString() );
+	assert(result2_512.salt       == result2ParsedCrypt.salt);
+	assert(result2_512.hash       == result2ParsedCrypt.hash);
+	assert(result2_512.toString() == result2ParsedCrypt.toString());
+
+	assert(makeHash(result2ParsedCrypt.digest, plainText1, result2ParsedCrypt.salt) == result2ParsedCrypt);
+	assertThrown!ConvException(parseCryptHash( result2_512.toString() ));
+	assert(parseHash( result2_512.toCryptString() ).salt            == parseCryptHash( result2_512.toCryptString() ).salt);
+	assert(parseHash( result2_512.toCryptString() ).hash            == parseCryptHash( result2_512.toCryptString() ).hash);
+	assert(parseHash( result2_512.toCryptString() ).toString()      == parseCryptHash( result2_512.toCryptString() ).toString());
+	assert(parseHash( result2_512.toCryptString() ).toCryptString() == parseCryptHash( result2_512.toCryptString() ).toCryptString());
 	
 	unitlog("Testing isPasswordCorrect");
 	assert(isPasswordCorrect     (plainText1, result2));
