@@ -1,32 +1,45 @@
 DAuth - Authentication Utility for D
 ====================================
 
-[[DAuth Changelog](https://github.com/Abscissa/DAuth/blob/master/CHANGELOG.md)] [[API Reference](http://semitwist.com/dauth/)]
+[[Changelog](https://github.com/Abscissa/DAuth/blob/master/CHANGELOG.md)] [[API Reference](http://semitwist.com/dauth/)]
 
-DAuth (soon to be rebranded as "InstaUser Basic") is a low-level authentication library for [D](http://dlang.org) with no external dependencies other than D's standard library, [Phobos](http://dlang.org/phobos/). It provides a simple-yet-flexible API, so your software can easily incorporate secure, upgradable user authentication based on [salted password hashes](http://en.wikipedia.org/wiki/Salt_%28cryptography%29).
+DAuth (soon to be rebranded as "InstaUser Basic") is a simple [salted password hash](http://en.wikipedia.org/wiki/Salt_%28cryptography%29) authentication library for [D](http://dlang.org). It provides a simple, yet flexible API, so your software can easily incorporate secure, upgradable user accounts.
 
-By default, DAuth uses known-good hashing and randomization algorithms (currently SHA-512 and Hash_DRBG), but it accepts any Phobos-compatible [hash digest](http://dlang.org/phobos/std_digest_digest.html) or [random number generator](http://dlang.org/phobos/std_random.html). You can have as much or as little control as you need, making DAuth suitable for both new projects and interfacing with any existing hashed-password store.
+By default, DAuth uses known-good hashing and randomization algorithms (currently SHA-512 and Hash_DRBG), but it accepts any [Phobos](http://dlang.org/phobos/)-compatible [hash digest](http://dlang.org/phobos/std_digest_digest.html) or [random number generator](http://dlang.org/phobos/std_random.html). You can have as much or as little control as you need, making DAuth suitable for both new projects and interfacing with any existing hashed-password store.
 
-DAuth's main interface is:
+DAuth's main interface is makeHash and isPasswordCorrect:
+
+```d
+import dauth;
+...
+char[] input = ...;
+Password pass = toPassword(input); // Ref counted with automatic memory zeroing
+
+// Salt is crypto-secure randomized
+string hash1 = makeHash(pass).toString(); // Ex: [SHA512]d93Tp...ULle$my7MSJu...NDtd5RG
+string hash2 = makeHash(pass).toCryptString(); // Ex: $6$d93Tp...ULle$my7MSJu...NDtd5RG
+
+bool ok1 = isPasswordCorrect(pass, parseHash("[SHA512]d93Tp...ULle$my7MSJu...NDtd5RG"));
+bool ok2 = isPasswordCorrect(pass, parseHash("$6$d93Tp...ULle$my7MSJu...NDtd5RG"));
+```
 
 - ```makeHash(Password)```: Generates a salted hash for a password. The salt, the hashing ("digest") algorithm, and the salt/password combing ("salter") algorithm can optionally be provided, or left as default. By default, the salt is automatically generated at random using a cryptographically secure psuedorandom number generator.
 
 - ```isPasswordCorrect(Password, Hash)```: Validates a password against an existing salted hash. As with ```makeHash```, everything is optionally customizable. The hashes are compared using a ["length-constant" time](https://crackstation.net/hashing-security.htm) algorithm to thwart timing-based attacks.
 
-The library also provides a forward-compatible string-based hash format for easy storage and retrieval. Additionally, there is a ```[dauth.random](http://semitwist.com/dauth/random.html)``` module with functions for randomly generating [salts](http://semitwist.com/dauth/random.html#randomSalt), [passwords](http://semitwist.com/dauth/random.html#randomPassword) and single-use [tokens](http://semitwist.com/dauth/random.html#randomToken):
+The library also provides a forward-compatible string-based hash format for easy storage and retrieval. Additionally, there is a [```dauth.random```](http://semitwist.com/dauth/random.html) module with functions for randomly generating [salts](http://semitwist.com/dauth/random.html#randomSalt), [passwords](http://semitwist.com/dauth/random.html#randomPassword) and [single-use tokens](http://semitwist.com/dauth/random.html#randomToken):
 
-```
+```d
 // All parameters are optional: Desired length, random number generator,
 // token strength, and chars permitted in the password:
 
 Password pass1 = randomPassword();
+ubyte[]  salt1 = randomSalt();
+string   singleUse1 = randomToken();
+
 Password pass2 = randomPassword!DefaultCryptoRand(20, defaultPasswordChars);
-
-ubyte[] salt1 = randomSalt();
-ubyte[] salt2 = randomSalt!DefaultCryptoRand(32);
-
-string singleUse1 = randomToken();
-string singleUse2 = randomToken!DefaultCryptoRand(defaultTokenStrength);
+ubyte[]  salt2 = randomSalt!DefaultCryptoRand(32);
+string   singleUse2 = randomToken!DefaultCryptoRand(defaultTokenStrength);
 ```
 
 In addition to its own extensible hash string format (supporting any digest type), DAuth also has native support for Unix [crypt(3)](https://en.wikipedia.org/wiki/Crypt_%28C%29)-style hash strings for MD5, SHA-256 and SHA-512.

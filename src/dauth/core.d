@@ -802,6 +802,18 @@ bool isPasswordCorrect()(Password password,
 version(DAuth_Unittest)
 unittest
 {
+import std.stdio;
+writeln(makeHash(dupPassword("pass123")).toString());
+
+char[] input = "...".dup;
+Password pass = toPassword(input); // Ref counted with automatic memory zeroing
+
+// Salt is crypto-secure randomized
+string hash1 = makeHash(pass).toString(); // Ex: [SHA512]d93Tp...ULle$my7MSJu...NDtd5RG
+string hash2 = makeHash(pass).toCryptString(); // Ex: $6$d93Tp...ULle$my7MSJu...NDtd5RG
+
+bool ok = isPasswordCorrect(pass, parseHash(hash1));
+
 	// For validity of sanity checks, these sha/md5 and base64 strings
 	// were NOT generated using Phobos.
 	auto plainText1        = dupPassword("hello world");
@@ -916,7 +928,7 @@ unittest
 	assert(resultRand1.salt != resultRand2.salt);
 	assert(resultRand1.hash != resultRand2.hash);
 
-	unitlog("Testing parseHash(void)");
+	unitlog("Testing parseHash()");
 	auto result2Parsed = parseDAuthHash( result2_512.toString() );
 	assert(result2_512.salt       == result2Parsed.salt);
 	assert(result2_512.hash       == result2Parsed.hash);
@@ -929,7 +941,7 @@ unittest
 	assert(parseHash( result2_512.toString() ).toString()      == parseDAuthHash( result2_512.toString() ).toString());
 	assert(parseHash( result2_512.toString() ).toCryptString() == parseDAuthHash( result2_512.toString() ).toCryptString());
 	
-	unitlog("Testing parseHash(void) - crypt(3)");
+	unitlog("Testing parseHash() - crypt(3)");
 	auto result2ParsedCrypt = parseCryptHash( result2_512.toCryptString() );
 	assert(result2_512.salt       == result2ParsedCrypt.salt);
 	assert(result2_512.hash       == result2ParsedCrypt.hash);
