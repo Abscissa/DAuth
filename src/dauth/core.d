@@ -601,14 +601,6 @@ private Hash!TDigest makeHashImpl(TDigest)
 	return ret;
 }
 
-/// Various supported formats of hash strings
-enum HashStringFormat
-{
-	any,    /// Any supported format
-	dauth,  /// DAuth-style. Ex: "[SHA512]salt$hash"
-	crypt,  /// Unix crypt-style. Ex: "$6$salt$hash"
-}
-
 /// Parses a string that was encoded by Hash.toString.
 ///
 /// Only OO-style digests are used since the digest is specified in the string
@@ -651,7 +643,6 @@ enum HashStringFormat
 /// }
 /// -------------------
 Hash!Digest parseHash(string str,
-	HashStringFormat format = HashStringFormat.any,
 	Digest delegate(string) digestFromDAuthCode = toDelegate(&defaultDigestFromCode),
 	Digest delegate(string) digestFromCryptCode = toDelegate(&defaultDigestFromCryptCode))
 {
