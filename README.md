@@ -9,25 +9,26 @@ By default, DAuth uses known-good hashing and randomization algorithms (currentl
 
 DAuth's main interface is makeHash and isPasswordCorrect:
 
-- ```makeHash(Password)```: Generates a salted hash for a password. The salt, the hashing ("digest") algorithm, and the salt/password combing ("salter") algorithm can optionally be provided, or left as default. By default, the salt is automatically generated at random using a cryptographically secure psuedorandom number generator.
+- ```makeHash(Password)```: Generates a salted hash for a password.
 
-- ```isPasswordCorrect(Password, Hash)```: Validates a password against an existing salted hash. As with ```makeHash```, everything is optionally customizable. The hashes are compared using a ["length-constant" time](https://crackstation.net/hashing-security.htm) algorithm to thwart timing-based attacks.
+- ```isPasswordCorrect(Password, Hash)```: Validates a password against an existing hash. The hashes are compared using a ["length-constant" time](https://crackstation.net/hashing-security.htm) algorithm to thwart timing-based attacks.
 
 ```d
 import dauth;
-...
+//...
 char[] input = ...;
 Password pass = toPassword(input); // Ref counted with automatic memory zeroing
 
-// Salt is crypto-secure randomized
+// makeHash: Salt is crypto-secure randomized
 string hash1 = makeHash(pass).toString(); // Ex: [SHA512]d93Tp...ULle$my7MSJu...NDtd5RG
 string hash2 = makeHash(pass).toCryptString(); // Ex: $6$d93Tp...ULle$my7MSJu...NDtd5RG
 
+// isPasswordCorrect: Compared using "length-constant" time
 bool ok1 = isPasswordCorrect(pass, parseHash("[SHA512]d93Tp...ULle$my7MSJu...NDtd5RG"));
 bool ok2 = isPasswordCorrect(pass, parseHash("$6$d93Tp...ULle$my7MSJu...NDtd5RG"));
 ```
 
-The library provides a forward-compatible string-based hash format for easy storage and retrieval using any digest type. It also has native support for Unix [crypt(3)](https://en.wikipedia.org/wiki/Crypt_%28C%29)-style hash strings for MD5, SHA-256 and SHA-512.
+The library provides a forward-compatible string-based hash format for easy storage and retrieval using any hash digest type. It also has native support for Unix [crypt(3)](https://en.wikipedia.org/wiki/Crypt_%28C%29)-style hash strings for MD5, SHA-256 and SHA-512.
 
 Additionally, there is a [```dauth.random```](http://semitwist.com/dauth/random.html) module with functions for randomly generating [salts](http://semitwist.com/dauth/random.html#randomSalt), [passwords](http://semitwist.com/dauth/random.html#randomPassword) and [single-use tokens](http://semitwist.com/dauth/random.html#randomToken):
 
@@ -70,13 +71,13 @@ bool validateUser(string user, char[] pass)
 
 In that example:
 
-```setPassword``` uses DAuth to store randomly-salted password hashes, using the default hashing digest (currently SHA-512), in a forward-compatible ASCII-safe text format. The format is mostly a form of Base64, and similar to [crypt(3)](https://en.wikipedia.org/wiki/Crypt_%28C%29) but more readable and flexible. The hash digest (ex: "SHA512") is stored as part of the ```hashString```, so if you upgrade to a different hashing digest, any existing accounts using the old digest will automatically remain accessible.
+```setPassword()``` uses DAuth to store randomly-salted password hashes, using the default hashing digest (currently SHA-512), in a forward-compatible ASCII-safe text format. The format is mostly a form of Base64, and similar to [crypt(3)](https://en.wikipedia.org/wiki/Crypt_%28C%29) but more readable and flexible. The hash digest (ex: "SHA512") is stored as part of the ```hashString```, so if you upgrade to a different hashing digest, any existing accounts using the old digest will automatically remain accessible.
 
-```validateUser``` function is automatically compatible with all supported DAuth-style and crypt(3)-style string formats...not just whatever format and digest ```setPassword``` happens to be using. If you wish to restrict the accepted formats and encodings, you can easily do that too.
+```validateUser()``` is automatically compatible with all supported DAuth-style and crypt(3)-style string formats...not just whatever format and digest ```setPassword``` happens to be using. If you wish to restrict the accepted formats and encodings, you can easily do that too.
 
 You may have noticed the passwords are mutable character arrays, not strings. This is for a reason:
 
-DAuth stores passwords in a type named ```Password```. This is a reference-counted struct that automatically zero's out the password data in memory before replacing the data or deallocating it. A ```dupPassword(string)``` is provided if you really need it, but this is not recommended (because a string's memory buffer is immutable and usually garbage-collected, and therefore can't be reliably zero'd out). Ultimately, this helps you decrease the likelihood of raw passwords sticking around in memory longer than necessary. Thus, with proper care when reading the password from your user, your user's passwords may be less likely to be exposed in the event of a memory-sniffing attack on your program.
+DAuth stores passwords in a type named [```Password```](http://semitwist.com/dauth/core.html#Password). This is a reference-counted struct that automatically zero's out the password data in memory before replacing the data or deallocating it. A ```dupPassword(string)``` is provided if you really need it, but this is not recommended (because a string's memory buffer is immutable and usually garbage-collected, and therefore can't be reliably zero'd out). Ultimately, this helps you decrease the likelihood of raw passwords sticking around in memory longer than necessary. Thus, with proper care when reading the password from your user, your user's passwords may be less likely to be exposed in the event of a memory-sniffing attack on your program.
 
 To ensure compatibility with both existing infrastructure and future cryptographic developments, nearly any aspect of the authentication system can be customized:
 
