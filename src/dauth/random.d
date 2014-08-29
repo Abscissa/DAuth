@@ -275,9 +275,6 @@ NEVER REUSE A SALT! This must be called separately EVERY time any user sets
 or resets a password. Reusing salts defeats the security of salting passwords.
 
 The length must be a multiple of 4, or this will throw an Exception
-
-WARNING! Mt19937 (the default here) is not a "Cryptographically secure
-pseudorandom number generator"
 +/
 Salt randomSalt(Rand = DefaultCryptoRand)(size_t length = defaultSaltLength)
 	if(isDAuthRandom!Rand)
@@ -348,9 +345,6 @@ base64-encoded (using an entirely URI-safe version that doesn't need escaping)
 from the raw random bytes.
 
 The strength must be a multiple of 4, or this will throw an Exception
-
-WARNING! Mt19937 (the default here) is not a "Cryptographically secure
-pseudorandom number generator"
 +/
 string randomToken(Rand = DefaultCryptoRand)(size_t strength = defaultTokenStrength)
 	if(isDAuthRandom!Rand)
@@ -419,9 +413,6 @@ unittest
 	}
 }
 
-/// WARNING! Mt19937 (the default here) is not a "Cryptographically secure
-/// pseudorandom number generator"
-///
 /// numBytes must be a multiple of 4, or this will throw an Exception
 ubyte[] randomBytes(Rand = DefaultCryptoRand)(size_t numBytes)
 	if(isDAuthRandom!Rand)
