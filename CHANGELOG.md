@@ -5,8 +5,10 @@ DAuth - Changelog
 
 v0.6.1 - TBD - crypt(3)
 -------------------
+- **Enhancement:** Added support for DMD 2.066.0. (Now supports DMD 2.064.2 through 2.066.0.)
 - **Enhancement:** Added support for [crypt(3)](https://en.wikipedia.org/wiki/Crypt_(C))-style hash strings. Currently supports ```$1$``` (MD5), ```$5$``` (SHA-256) and ```$6$``` (SHA-512).
-- **Change:** Removed ```dauth.hashdrbg.isSomeStream``` because it's named wrong, unused, and not particularly useful anyway.
+- **Change:** Removed ```dauth.hashdrbg.isSomeStream``` because it's named wrong, unused, and not particularly useful anyway.]
+- **Fixed:** Works for DMD 2.066.0. 
 
 v0.6.0 - 2014/05/22 - SHA-2, Hash_DRBG and Separate Modules
 -------------------

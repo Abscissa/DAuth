@@ -17,7 +17,18 @@ import std.typecons;
 import std.typetuple;
 
 import dauth.core;
-import dauth.sha;
+
+// Only use dauth.sha if SHA-2 isn't in Phobos (ie, DMD 2.065 and below)
+import phobos_sha = std.digest.sha;
+static if(!is(phobos_sha.SHA512))
+	import dauth.sha;
+else
+	import std.digest.sha;
+
+// TemplateArgsOf only exists in Phobos of DMD 2.066 and up
+private struct dummy(T) {}
+static if(!is(std.traits.TemplateArgsOf!(dummy!int)))
+	private alias TemplateArgsOf = DAuth_TemplateArgsOf;
 
 version(Windows)
 {

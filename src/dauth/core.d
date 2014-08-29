@@ -19,15 +19,21 @@ import std.exception;
 import std.functional;
 import std.random;
 import std.range;
+import std.traits;
 import std.typecons;
 
 import dauth.random : randomSalt;
-import dauth.sha;
 import dauth.hashdrbg;
 
-alias SHA1 = dauth.sha.SHA1;
-alias SHA1Digest = dauth.sha.SHA1Digest;
-alias sha1Of = dauth.sha.sha1Of;
+// Only use dauth.sha if SHA-2 isn't in Phobos (ie, DMD 2.065 and below)
+static if(!is(std.digest.sha.SHA512))
+{
+	import dauth.sha;
+
+	private alias SHA1 = dauth.sha.SHA1;
+	private alias SHA1Digest = dauth.sha.SHA1Digest;
+	private alias sha1Of = dauth.sha.sha1Of;
+}
 
 version(DAuth_Unittest)
 {
@@ -1009,14 +1015,18 @@ bool lengthConstantEquals(ubyte[] a, ubyte[] b)
 	return diff == 0;
 }
 
-// Borrowed from Phobos master (Should arrive in DMD v2.066).
-package template TemplateArgsOf(alias T : Base!Args, alias Base, Args...)
+// Borrowed from Phobos (TemplateArgsOf only exists in DMD 2.066 and up).
+package template DAuth_TemplateArgsOf(alias T : Base!Args, alias Base, Args...)
 {
-    alias TemplateArgsOf = Args;
+	alias DAuth_TemplateArgsOf = Args;
 }
-package template TemplateArgsOf(T : Base!Args, alias Base, Args...)
+package template DAuth_TemplateArgsOf(T : Base!Args, alias Base, Args...)
 {
-    alias TemplateArgsOf = Args;
+	alias DAuth_TemplateArgsOf = Args;
 }
-static assert(is( TemplateArgsOf!( Hash!SHA1   )[0] == SHA1   ));
-static assert(is( TemplateArgsOf!( Hash!Digest )[0] == Digest ));
+static assert(is( DAuth_TemplateArgsOf!( Hash!SHA1   )[0] == SHA1   ));
+static assert(is( DAuth_TemplateArgsOf!( Hash!Digest )[0] == Digest ));
+
+private struct dummy(T) {}
+static if(!is(std.traits.TemplateArgsOf!(dummy!int)))
+	private alias TemplateArgsOf = DAuth_TemplateArgsOf;
