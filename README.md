@@ -1,7 +1,7 @@
 DAuth - Authentication Utility for D
 ====================================
 
-DAuth is a low-level authentication library for [D](http://dlang.org) with no external dependencies other than D's standard library, Phobos. It provides a simple-yet-flexible API, so your software can easily incorporate secure, upgradable user authentication based on [salted password hashes](http://en.wikipedia.org/wiki/Salt_%28cryptography%29).
+DAuth (soon to be rebranded "InstaUser Basic") is a low-level authentication library for [D](http://dlang.org) with no external dependencies other than D's standard library, Phobos. It provides a simple-yet-flexible API, so your software can easily incorporate secure, upgradable user authentication based on [salted password hashes](http://en.wikipedia.org/wiki/Salt_%28cryptography%29).
 
 By default, DAuth uses known-good hashing and randomization algorithms (currently SHA-512 and Hash_DRBG), but it accepts any Phobos-compatible [hash digest](http://dlang.org/phobos/std_digest_digest.html) or [random number generator](http://dlang.org/phobos/std_random.html). You can have as much or as little control as you need, making DAuth suitable for both new projects and interfacing with any existing hashed-password store.
 
@@ -13,11 +13,15 @@ DAuth's main interface is:
 
 The library also provides a forward-compatible string-based hash format for easy storage and retrieval. Additionally, there are functions for randomly generating salts, passwords and single-use tokens.
 
-Note: DAuth isn't intended to directly provide any encryption, hashing, or random number generating algorithms, and tries to leave this up to other libraries (relying on the [Phobos](http://dlang.org/phobos/index.html)-defined protocols for [digests](http://dlang.org/phobos/std_digest_digest.html) and [random number generators](http://dlang.org/phobos/std_random.html)).
-
-At the moment, however, DAuth does provide implementations of [SHA-2](http://en.wikipedia.org/wiki/Sha2) and [Hash_DRBG](http://csrc.nist.gov/publications/nistpubs/800-90A/SP800-90A.pdf) because, as of DMD 2.065, Phobos doesn't contain any digest better than [SHA-1](http://en.wikipedia.org/wiki/SHA-1#Attacks) (although it [is in git master](https://github.com/D-Programming-Language/phobos/pull/2129) and should be included in 2.066) or any [cryptographically secure random number generator](http://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator). DAuth's intention is to migrate these algorithms over to Phobos.
+In addition to its own extensible hash string format (supporting any digest type), DAuth also has native support for Unix crypt(3)-style hash strings for MD5, SHA-256 and SHA-512.
 
 [DAuth Changelog](https://github.com/Abscissa/DAuth/blob/master/CHANGELOG.md)
+
+A Note About The Project's Scope
+--------------------------------
+DAuth isn't intended to directly provide any encryption, hashing, or random number generating algorithms, and tries to leave this up to other libraries (relying on the [Phobos](http://dlang.org/phobos/index.html)-defined protocols for [digests](http://dlang.org/phobos/std_digest_digest.html) and [random number generators](http://dlang.org/phobos/std_random.html)).
+
+At the moment however, DAuth does provide implementations of [SHA-2](http://en.wikipedia.org/wiki/Sha2) and [Hash_DRBG](http://csrc.nist.gov/publications/nistpubs/800-90A/SP800-90A.pdf) because (as of DMD 2.066.0) Phobos lacks a [cryptographically secure random number generator](http://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator) and didn't gain SHA-2 until recently (v2.066.0). DAuth's intention is to migrate Hash_DRBG over to Phobos and eventually eliminate both that and SHA-2 from DAuth itself.
 
 Typical Usage
 -------------
@@ -43,9 +47,11 @@ bool validateUser(string user, char[] pass)
 }
 ```
 
-The above code stores randomly-salted password hashes, using the default hashing digest, in a forward-compatible ASCII-safe text format (mostly a form of Base64). The hash digest (ex: "SHA1") is stored as part of the ```hashString```, so if you upgrade to a different hashing digest, any existing accounts using the old digest will automatically remain accessible.
+The above ```setPassword``` uses DAuth to store randomly-salted password hashes, using the default hashing digest (currently SHA-512), in a forward-compatible ASCII-safe text format (mostly a form of Base64 and similar to [crypt(3)](https://en.wikipedia.org/wiki/Crypt_%28C%29) but more readable and flexible). The hash digest (ex: "SHA512") is stored as part of the ```hashString```, so if you upgrade to a different hashing digest, any existing accounts using the old digest will automatically remain accessible.
 
-The passwords are mutable strings for a reason: DAuth stores passwords in a type named ```Password```. This is a reference-counted struct that automatically zero'd out the password data in memory before replacing the data or deallocating it. A ```dupPassword(string)``` is provided if you really need it, but this is not recommended because a string's memory buffer is immutable (and usually garbage-collected), and therefore can't be reliably zero'd out.
+The above ```validateUser``` function is automatically compatible with all supported DAuth-style and crypt(3)-style string formats - not just whatever ```setPassword``` happens to be using. But if you wish to restrict the accepted formats and encodings, you can eeasily do that too.
+
+You may have noticed the passwords are mutable character arrays, not strings. This is for a reason: DAuth stores passwords in a type named ```Password```. This is a reference-counted struct that automatically zero's out the password data in memory before replacing the data or deallocating it. A ```dupPassword(string)``` is provided if you really need it, but this is not recommended because a string's memory buffer is immutable (and usually garbage-collected), and therefore can't be reliably zero'd out. Ultimately, this helps you decrease the likelihood of raw passwords sticking around in memory longer than necessary. Thus, with proper care when reading the password from your user, your user's passwords may be less likely to be exposed in the event of a memory-sniffing attack on your program.
 
 To ensure compatibility with both existing infrastructure and future cryptographic developments, nearly any aspect of the authentication system can be customized:
 
