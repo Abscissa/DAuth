@@ -69,6 +69,13 @@ USE THIS RESPONSIBLY! NEVER EMAIL THE PASSWORD! Emailing a generated password
 to a user is a highly insecure practice and should NEVER be done. However,
 there are other times when generating a password may be reasonable, so this is
 provided as a convenience.
+
+Optional_Params:
+Rand - Default value is 'DefaultCryptoRand'
+
+length - Default value is 'defaultPasswordLength'
+
+passwordChars - Default value is 'defaultPasswordChars'
 +/
 Password randomPassword(Rand = DefaultCryptoRand) (
 	size_t length = defaultPasswordLength,
@@ -277,6 +284,11 @@ NEVER REUSE A SALT! This must be called separately EVERY time any user sets
 or resets a password. Reusing salts defeats the security of salting passwords.
 
 The length must be a multiple of 4, or this will throw an Exception
+
+Optional_Params:
+Rand - Default value is 'DefaultCryptoRand'
+
+length - Default value is 'defaultSaltLength'
 +/
 Salt randomSalt(Rand = DefaultCryptoRand)(size_t length = defaultSaltLength)
 	if(isDAuthRandom!Rand)
@@ -347,6 +359,11 @@ base64-encoded (using an entirely URI-safe version that doesn't need escaping)
 from the raw random bytes.
 
 The strength must be a multiple of 4, or this will throw an Exception
+
+Optional_Params:
+Rand - Default value is 'DefaultCryptoRand'
+
+strength - Default value is 'defaultTokenStrength'
 +/
 string randomToken(Rand = DefaultCryptoRand)(size_t strength = defaultTokenStrength)
 	if(isDAuthRandom!Rand)

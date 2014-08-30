@@ -69,6 +69,12 @@ then pathToStrongRandom is assumed to be pathToRandom.
 Because std.stream is pending a full replacement, be aware that
 stream-like random number generators currently use a temporary
 design that may change once a new std.stream is available.
+
+Declaration:
+-----------------------
+struct SystemEntropyStream(string pathToRandom = defaultPathToRandom,
+	string pathToStrongRandom = defaultPathToStrongRandom) {...}
+-----------------------
 +/
 struct SystemEntropyStream(string pathToRandom = defaultPathToRandom,
 	string pathToStrongRandom = defaultPathToStrongRandom)
@@ -107,6 +113,9 @@ struct SystemEntropyStream(string pathToRandom = defaultPathToRandom,
 	/dev/urandom, which may block for a noticable amount of time to ensure
 	a minimum amount of estimated entropy is available. If no secondary
 	source is available, then predictionResistance is ignored.
+
+	Optional_Params:
+	predictionResistance - Default value is 'No.PredictionResistance'
 	+/
 	static void read(ubyte[] buf, Flag!"PredictionResistance" predictionResistance = No.PredictionResistance)
 	{
@@ -244,6 +253,11 @@ copy of the last generated value in memory. For security purposes, it may
 occasionally be appropriate to make an extra popFront() call before and/or
 after retreiving entropy values. This may decrease the chance of using
 a compromized entropy value in the event of a memory-sniffing attacker.
+
+Optional_Params:
+pathToRandom - Default value is 'defaultPathToRandom'
+
+pathToStrongRandom - Default value is 'defaultPathToStrongRandom'
 +/
 alias SystemEntropy(Elem, string pathToRandom = defaultPathToRandom,
 	string pathToStrongRandom = defaultPathToStrongRandom) =
@@ -308,6 +322,13 @@ non-deterministic.
 Because std.stream is pending a full replacement, be aware that
 stream-like random number generators currently use a temporary
 design that may change once a new std.stream is available.
+
+Declaration:
+-----------------------
+struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStream = SystemEntropyStream!())
+	if(isInstanceOf!(SHA, TSHA))
+	{...}
+-----------------------
 +/
 struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStream = SystemEntropyStream!())
 	if(isInstanceOf!(SHA, TSHA))
@@ -606,6 +627,13 @@ copy of the last generated value in memory. For security purposes, it may
 occasionally be appropriate to make an extra popFront() call before and/or
 after retrieving entropy values. This may decrease the chance of using
 a compromised entropy value in the event of a memory-sniffing attacker.
+
+Declaration:
+-----------------------
+struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStream = SystemEntropyStream!())
+	if(isInstanceOf!(SHA, TSHA))
+	{...}
+-----------------------
 +/
 template HashDRBG(Elem, TSHA = SHA512, string custom = "D Crypto RNG", EntropyStream = SystemEntropyStream!())
 	if(isInstanceOf!(SHA, TSHA))
@@ -680,6 +708,13 @@ purposes, it may occasionally be appropriate to make an extra popFront()
 call before and/or after retreiving entropy values. This may decrease the
 chance of using a compromized entropy value in the event of a
 memory-sniffing attacker.
+
+Declaration:
+-----------------------
+struct WrappedStreamRNG(RandomStream, StaticUByteArr)
+	if(isRandomStream!RandomStream && isStaticArray!StaticUByteArr && is(ElementType!StaticUByteArr==ubyte))
+	{...}
+-----------------------
 +/
 struct WrappedStreamRNG(RandomStream, StaticUByteArr)
 	if(isRandomStream!RandomStream && isStaticArray!StaticUByteArr && is(ElementType!StaticUByteArr==ubyte))

@@ -503,6 +503,9 @@ struct Hash(TDigest) if(isAnyDigest!TDigest)
 	    writeln( hash.toString(&customDigestCodeOfObj) );
 	}
 	-------------------
+	
+	Optional_Params:
+	digestCodeOfObj - Default value is 'toDelegate(&defaultDigestCodeOfObj)'
 	+/
 	string toString(string delegate(Digest) digestCodeOfObj = toDelegate(&defaultDigestCodeOfObj))
 	{
@@ -538,6 +541,9 @@ struct Hash(TDigest) if(isAnyDigest!TDigest)
 	
 	The default digestCodeOfObj for this function is defaultDigestCryptCodeOfObj.
 	
+	Optional_Params:
+	digestCodeOfObj - Default value is 'toDelegate(&defaultDigestCryptCodeOfObj)'
+
 	See also: $(LINK https://en.wikipedia.org/wiki/Crypt_%28C%29)
 	+/
 	string toCryptString(string delegate(Digest) digestCodeOfObj = toDelegate(&defaultDigestCryptCodeOfObj))
@@ -583,6 +589,11 @@ See the implementation of DAuth's defaultSalter to see how to do this.
 
 If using an OO-style Digest, then digest MUST be non-null. Otherwise,
 an UnknownDigestException will be thrown.
+
+Optional_Params:
+salt - Default value is 'randomSalt()'
+
+salter - Default value is 'toDelegate(&defaultSalter!TDigest)'
 +/
 Hash!TDigest makeHash(TDigest = DefaultDigest)
 	(Password password, Salt salt = randomSalt(), Salter!TDigest salter = toDelegate(&defaultSalter!TDigest))
@@ -680,6 +691,11 @@ void doStuff(string hashString)
     auto hash = parseHash(hashString, &customDigestFromCode);
 }
 -------------------
+
+Optional_Params:
+digestFromDAuthCode - Default value is 'toDelegate(&defaultDigestFromCode)'
+
+digestFromCryptCode - Default value is 'toDelegate(&defaultDigestFromCryptCode)'
 +/
 Hash!Digest parseHash(string str,
 	Digest delegate(string) digestFromDAuthCode = toDelegate(&defaultDigestFromCode),
@@ -696,7 +712,7 @@ Hash!Digest parseHash(string str,
 
 ///ditto
 Hash!Digest parseDAuthHash(string str,
-	Digest delegate(string) digestFromCode = toDelegate(&defaultDigestFromCode))
+	Digest delegate(string) digestFromDAuthCode = toDelegate(&defaultDigestFromCode))
 {
 	// No need to mess with UTF
 	auto bytes = cast(immutable(ubyte)[]) str;
@@ -722,14 +738,14 @@ Hash!Digest parseDAuthHash(string str,
 	Hash!Digest result;
 	result.salt   = Base64.decode(salt);
 	result.hash   = Base64.decode(hash);
-	result.digest = digestFromCode(cast(string)digestCode);
+	result.digest = digestFromDAuthCode(cast(string)digestCode);
 	
 	return result;
 }
 
 ///ditto
 Hash!Digest parseCryptHash(string str,
-	Digest delegate(string) digestFromCode = toDelegate(&defaultDigestFromCryptCode))
+	Digest delegate(string) digestFromCryptCode = toDelegate(&defaultDigestFromCryptCode))
 {
 	// No need to mess with UTF
 	auto bytes = cast(immutable(ubyte)[]) str;
@@ -746,7 +762,7 @@ Hash!Digest parseCryptHash(string str,
 		Hash!Digest result;
 		result.salt   = salt.dup;
 		result.hash   = hash.dup;
-		result.digest = digestFromCode(null);
+		result.digest = digestFromCryptCode(null);
 		
 		return result;
 	}
@@ -766,7 +782,7 @@ Hash!Digest parseCryptHash(string str,
 	Hash!Digest result;
 	result.salt   = Base64.decode(salt);
 	result.hash   = Base64.decode(hash);
-	result.digest = digestFromCode(cast(string)digestCode);
+	result.digest = digestFromCryptCode(cast(string)digestCode);
 	
 	return result;
 }
@@ -777,6 +793,11 @@ Validates a password against an existing salted hash.
 If sHash is a Hash!Digest, then sHash.digest MUST be non-null. Otherwise
 this function will have no other way to determine what digest to match
 against, and an UnknownDigestException will be thrown.
+
+Optional_Params:
+salter - Default value is 'toDelegate(&defaultSalter!TDigest)'
+
+digest - Default value is 'new DefaultDigestClass()'
 +/
 bool isSameHash(TDigest = DefaultDigest)(Password password, Hash!TDigest sHash,
 	Salter!TDigest salter = toDelegate(&defaultSalter!TDigest))
