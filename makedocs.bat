@@ -1,5 +1,9 @@
 @echo off
-rdmd -Isrc --build-only --force -c -Dddocs src\dauth\package.d
-del docs\index.html > NUL 2> NUL
-rename docs\package.html index.html
+
+rem 'ddox' must be installed and on PATH:
+rem https://github.com/rejectedsoftware/ddox
+
+rdmd -Isrc --build-only --force -c -Dddocs_tmp -X -Xfdocs\docs.json src\dauth\package.d
+rmdir /S /Q docs_tmp > NUL 2> NUL
 del src\dauth\package.exe
+ddox generate-html docs\docs.json docs\public

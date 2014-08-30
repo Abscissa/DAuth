@@ -1,4 +1,9 @@
 #!/bin/sh
-rdmd -Isrc --build-only --force -c -Dddocs src/dauth/package.d
-mv docs/package.html docs/index.html
+
+# 'ddox' must be installed and on PATH:
+# https://github.com/rejectedsoftware/ddox
+
+rdmd -Isrc --build-only --force -c -Dddocs_tmp -X -Xfdocs/docs.json src/dauth/package.d
+rm -rf docs_tmp
 rm src/dauth/package
+ddox generate-html docs/docs.json docs/public
