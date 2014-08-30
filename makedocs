@@ -6,4 +6,5 @@
 rdmd -Isrc --build-only --force -c -Dddocs_tmp -X -Xfdocs/docs.json src/dauth/package.d
 rm -rf docs_tmp
 rm src/dauth/package
-ddox generate-html docs/docs.json docs/public
+ddox filter docs/docs.json --min-protection=Protected
+ddox generate-html docs/docs.json docs/public --navigation-type=ModuleTree
