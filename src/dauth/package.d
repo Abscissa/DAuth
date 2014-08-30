@@ -1,5 +1,5 @@
 ﻿/++
-DAuth v0.6.1 - Authentication Utility for D
+DAuth v0.6.1 - Salted Hased Password Library for D
 
 Writen in the D programming language.
 

@@ -1,5 +1,5 @@
 ﻿/++
-DAuth - Authentication Utility for D
+DAuth - Salted Hased Password Library for D
 Random generators
 +/
 
