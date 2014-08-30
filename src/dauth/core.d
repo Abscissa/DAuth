@@ -1,5 +1,5 @@
 ﻿/++
-DAuth - Salted Hased Password Library for D
+DAuth - Salted Hashed Password Library for D
 Core package
 +/
 module dauth.core;

@@ -1,5 +1,5 @@
 ﻿/++
-DAuth - Salted Hased Password Library for D
+DAuth - Salted Hashed Password Library for D
 Hash_DRBG Cryptographic Random Number Generator
 +/
 
