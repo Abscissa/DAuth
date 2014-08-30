@@ -1,5 +1,5 @@
-DAuth - Authentication Utility for D
-====================================
+DAuth - Salted Hased Password Library for D
+===========================================
 
 [[ChangeLog](https://github.com/Abscissa/DAuth/blob/master/CHANGELOG.md)] [[API Reference](http://semitwist.com/dauth/)]
 
