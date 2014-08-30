@@ -32,7 +32,7 @@ bool ok2 = isSameHash(pass, parseHash("$6$d93Tp...ULle$my7MSJu...NDtd5RG"));
 
 The library provides a forward-compatible string-based hash format for easy storage and retrieval using any hash digest type. It also has native support for Unix [crypt(3)](https://en.wikipedia.org/wiki/Crypt_%28C%29)-style hash strings for MD5, SHA-256 and SHA-512. To avoid accidental usage of low-security, hash digests which DAuth knows to provide inferior secury (such as MD5) require a clearly-named compiler flag to be used: ```-version=DAuth_AllowWeakSecurity```.
 
-Additionally, there is a [```dauth.random```](http://semitwist.com/dauth/random.html) module with functions for randomly generating [salts](http://semitwist.com/dauth/random/randomSalt.html), [passwords](http://semitwist.com/dauth/random/randomPassword.html) and [single-use tokens](http://semitwist.com/dauth/random/randomToken.html):
+Additionally, there is a [```dauth.random```](http://semitwist.com/dauth/dauth/random.html) module with functions for randomly generating [salts](http://semitwist.com/dauth/dauth/random/randomSalt.html), [passwords](http://semitwist.com/dauth/dauth/random/randomPassword.html) and [single-use tokens](http://semitwist.com/dauth/dauth/random/randomToken.html):
 
 ```d
 // All parameters are optional: Desired length, random number generator,
@@ -79,7 +79,7 @@ In that example:
 
 You may have noticed the passwords are mutable character arrays, not strings. This is for a reason:
 
-DAuth stores passwords in a type named [```Password```](http://semitwist.com/dauth/core/Password.html). This is a reference-counted struct that automatically zero's out the password data in memory before replacing the data or deallocating it. A ```dupPassword(string)``` is provided if you really need it, but this is not recommended (because a string's memory buffer is immutable and usually garbage-collected, and therefore can't be reliably zero'd out). Ultimately, this helps you decrease the likelihood of raw passwords sticking around in memory longer than necessary. Thus, with proper care when reading the password from your user, your user's passwords may be less likely to be exposed in the event of a memory-sniffing attack on your program.
+DAuth stores passwords in a type named [```Password```](http://semitwist.com/dauth/dauth/core/Password.html). This is a reference-counted struct that automatically zero's out the password data in memory before replacing the data or deallocating it. A ```dupPassword(string)``` is provided if you really need it, but this is not recommended (because a string's memory buffer is immutable and usually garbage-collected, and therefore can't be reliably zero'd out). Ultimately, this helps you decrease the likelihood of raw passwords sticking around in memory longer than necessary. Thus, with proper care when reading the password from your user, your user's passwords may be less likely to be exposed in the event of a memory-sniffing attack on your program.
 
 To ensure compatibility with both existing infrastructure and future cryptographic developments, nearly any aspect of the authentication system can be customized:
 
