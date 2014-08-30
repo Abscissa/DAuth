@@ -1,4 +1,4 @@
-/++
+﻿/++
 DAuth - Authentication Utility for D
 Hash_DRBG Cryptographic Random Number Generator
 +/

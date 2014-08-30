@@ -1,4 +1,4 @@
-// Written in the D programming language.
+﻿// Written in the D programming language.
 /**
 This has been temporarily added to DAuth since it doesn't exist in Phobos
 before DMD 2.066:

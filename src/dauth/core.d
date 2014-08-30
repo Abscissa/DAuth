@@ -1,4 +1,4 @@
-/++
+﻿/++
 DAuth - Authentication Utility for D
 Core package
 +/
