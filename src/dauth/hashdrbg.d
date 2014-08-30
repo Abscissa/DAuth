@@ -130,8 +130,10 @@ struct SystemEntropyStream(string pathToRandom = defaultPathToRandom,
 			static assert(0);
 	}
 
-	/// Establishes a handle/connection to the system-specific entropy generator.
-	/// Does nothing if already open.
+	/++
+	Establishes a handle/connection to the system-specific entropy generator.
+	Does nothing if already open.
+	+/
 	static void open()
 	{
 		if(isOpen)
@@ -190,8 +192,10 @@ struct SystemEntropyStream(string pathToRandom = defaultPathToRandom,
 			static assert(0);
 	}
 
-	/// Check whether SystemEntropyStream is currently connected to with the
-	/// system-specific entropy generator.
+	/++
+	Check whether SystemEntropyStream is currently connected to with the
+	system-specific entropy generator.
+	+/
 	static @property bool isOpen()
 	{
 		version(Windows)

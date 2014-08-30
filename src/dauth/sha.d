@@ -1,7 +1,10 @@
 // Written in the D programming language.
 /**
-This has been temporarily added to DAuth until it becomes part of Phobos:
+This has been temporarily added to DAuth since it doesn't exist in Phobos
+before DMD 2.066:
 $(LINK https://github.com/D-Programming-Language/phobos/pull/2129)
+
+On DMD 2.066 and up, DAuth uses std.digest.sha *instead* of this module.
 
 Main module: $(LINK2 index.html,dauth)$(BR)
 

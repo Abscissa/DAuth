@@ -65,8 +65,10 @@ alias DefaultDigest = SHA512; /// Default is SHA-512
 alias DefaultDigestClass = WrapperDigest!DefaultDigest; /// OO-style version of 'DefaultDigest'.
 alias TokenBase64 = Base64Impl!('-', '_', '~'); /// Implementation of Base64 engine used for tokens.
 
-/// Default implementation of 'digestCodeOfObj' for DAuth-style hash strings.
-/// See 'Hash!(TDigest).toString' for more info.
+/++
+Default implementation of 'digestCodeOfObj' for DAuth-style hash strings.
+See 'Hash!(TDigest).toString' for more info.
++/
 string defaultDigestCodeOfObj(Digest digest)
 {
 	if     (cast( CRC32Digest      )digest) return "CRC32";
@@ -83,8 +85,10 @@ string defaultDigestCodeOfObj(Digest digest)
 		throw new UnknownDigestException("Unknown digest type");
 }
 
-/// Default implementation of 'digestFromCode' for DAuth-style hash strings.
-/// See 'parseHash' for more info.
+/++
+Default implementation of 'digestFromCode' for DAuth-style hash strings.
+See 'parseHash' for more info.
++/
 Digest defaultDigestFromCode(string digestCode)
 {
 	switch(digestCode)
@@ -104,8 +108,10 @@ Digest defaultDigestFromCode(string digestCode)
 	}
 }
 
-/// Default implementation of 'digestCodeOfObj' for Unix crypt-style hash strings.
-/// See 'Hash!(TDigest).toString' for more info.
+/++
+Default implementation of 'digestCodeOfObj' for Unix crypt-style hash strings.
+See 'Hash!(TDigest).toString' for more info.
++/
 string defaultDigestCryptCodeOfObj(Digest digest)
 {
 	if     (cast( MD5Digest    )digest) return "1";
@@ -115,8 +121,10 @@ string defaultDigestCryptCodeOfObj(Digest digest)
 		throw new UnknownDigestException("Unknown digest type");
 }
 
-/// Default implementation of 'digestFromCode' for Unix crypt-style hash strings.
-/// See 'parseHash' for more info.
+/++
+Default implementation of 'digestFromCode' for Unix crypt-style hash strings.
+See 'parseHash' for more info.
++/
 Digest defaultDigestFromCryptCode(string digestCode)
 {
 	switch(digestCode)
@@ -219,18 +227,22 @@ private void validateStrength(Digest digest)
 	}
 }
 
-/// Thrown whenever a digest type cannot be determined.
-/// For example, when the provided (or default) 'digestCodeOfObj' or 'digestFromCode'
-/// delegates fail to find a match. Or when passing isSameHash a
-/// Hash!Digest with a null 'digest' member (which prevents it from determining
-/// the correct digest to match with).
+/++
+Thrown whenever a digest type cannot be determined.
+For example, when the provided (or default) 'digestCodeOfObj' or 'digestFromCode'
+delegates fail to find a match. Or when passing isSameHash a
+Hash!Digest with a null 'digest' member (which prevents it from determining
+the correct digest to match with).
++/
 class UnknownDigestException : Exception
 {
 	this(string msg) { super(msg); }
 }
 
-/// Thrown when a known-weak algortihm or setting it attempted, UNLESS
-/// compiled with '-version=DAuth_AllowWeakSecurity'
+/++
+Thrown when a known-weak algortihm or setting it attempted, UNLESS
+compiled with '-version=DAuth_AllowWeakSecurity'
++/
 class KnownWeakException : Exception
 {
 	static enum message =
@@ -244,8 +256,10 @@ class KnownWeakException : Exception
 	}
 }
 
-/// Like std.digest.digest.isDigest, but also accepts OO-style digests
-/// (ie. classes deriving from interface std.digest.digest.Digest)
+/++
+Like std.digest.digest.isDigest, but also accepts OO-style digests
+(ie. classes deriving from interface std.digest.digest.Digest)
++/
 template isAnyDigest(TDigest)
 {
 	enum isAnyDigest =
@@ -265,8 +279,10 @@ unittest
 	static assert(!isAnyDigest!Object);
 }
 
-/// Like std.digest.digest.DigestType, but also accepts OO-style digests
-/// (ie. classes deriving from interface std.digest.digest.Digest)
+/++
+Like std.digest.digest.DigestType, but also accepts OO-style digests
+(ie. classes deriving from interface std.digest.digest.Digest)
++/
 template AnyDigestType(TDigest)
 {
 	static assert(isAnyDigest!TDigest,
@@ -349,6 +365,7 @@ If you keep any direct references to Password.data, be aware it may get cleared.
 
 The payload is a private struct that supports the following:
 
+---------------------------------------------------------
 	@property ubyte[] data(): Retrieve the actual plaintext password
 
 	@property size_t length() const: Retrieve the password length
@@ -358,6 +375,7 @@ The payload is a private struct that supports the following:
 	void opAssign(ubyte[] rhs): Assignment
 
 	~this(): Destructor
+---------------------------------------------------------
 +/
 alias Password = RefCounted!PasswordData;
 
@@ -398,82 +416,94 @@ private struct PasswordData
 	}
 }
 
-/// Constructs a Password from a ubyte[].
-/// Mainly provided for syntactic consistency with 'toPassword(char[])'.
+/++
+Constructs a Password from a ubyte[].
+Mainly provided for syntactic consistency with 'toPassword(char[])'.
++/
 Password toPassword(ubyte[] password)
 {
 	return Password(password);
 }
 
-/// Constructs a Password from a char[] so you don't have to cast to ubyte[],
-/// and don't accidentally cast away immutability.
+/++
+Constructs a Password from a char[] so you don't have to cast to ubyte[],
+and don't accidentally cast away immutability.
++/
 Password toPassword(char[] password)
 {
 	return Password(cast(ubyte[])password);
 }
 
-/// This function exists as a convenience in case you need it, HOWEVER it's
-/// recommended to design your code so you DON'T need to use this (use
-/// toPassword instead):
-///
-/// Using this to create a Password cannot protect the in-memory data of your
-/// original string because a string's data is immutable (this function must
-/// .dup the memory).
-///
-/// While immutability usually improves safety, you should avoid ever storing
-/// unhashed passwords in immutables because they cannot be reliably
-/// zero-ed out.
+/++
+This function exists as a convenience in case you need it, HOWEVER it's
+recommended to design your code so you DON'T need to use this (use
+toPassword instead):
+
+Using this to create a Password cannot protect the in-memory data of your
+original string because a string's data is immutable (this function must
+.dup the memory).
+
+While immutability usually improves safety, you should avoid ever storing
+unhashed passwords in immutables because they cannot be reliably
+zero-ed out.
++/
 Password dupPassword(string password)
 {
 	return toPassword(password.dup);
 }
 
-/// Contains all the relevant information for a salted hash.
-/// Note the digest type can be obtained via DigestOf!(SomeHashType).
+/++
+Contains all the relevant information for a salted hash.
+Note the digest type can be obtained via DigestOf!(SomeHashType).
++/
 struct Hash(TDigest) if(isAnyDigest!TDigest)
 {
 	Salt salt; /// The salt that was used.
 	
-	/// The hash of the salted password. To obtain a printable DB-friendly
-	/// string, pass this to std.digest.digest.toHexString.
+	/++
+	The hash of the salted password. To obtain a printable DB-friendly
+	string, pass this to std.digest.digest.toHexString.
+	+/
 	AnyDigestType!TDigest hash;
 	
 	/// The digest that was used for hashing.
 	TDigest digest;
 	
-	/// Encodes the digest, salt and hash into a convenient forward-compatible
-	/// string format, ready for insertion into a database.
-	///
-	/// To support additional digests besides the built-in (Phobos's CRC32, MD5,
-	/// RIPEMD160 and SHA), supply a custom delegate for digestCodeOfObj.
-	/// Your custom digestCodeOfObj only needs to handle OO-style digests.
-	/// As long as the OO-style digests were created using Phobos's
-	/// WrapperDigest template, the template-style version will be handled
-	/// automatically. You can defer to DAuth's defaultDigestCodeOfObj to
-	/// handle the built-in digests.
-	///
-	/// Example:
-	/// -------------------
-	/// import std.digest.digest;
-	/// import dauth;
-	/// 
-	/// struct BBQ42 {...}
-	/// static assert(isDigest!BBQ42);
-	/// alias BBQ42Digest = WrapperDigest!BBQ42;
-	/// 
-	/// string customDigestCodeOfObj(Digest digest)
-	/// {
-	///     if     (cast(BBQ42Digest)digest) return "BBQ42";
-	///     else if(cast(FAQ17Digest)digest) return "FAQ17";
-	///     else
-	///         return defaultDigestCodeOfObj(digest);
-	/// }
-	/// 
-	/// void doStuff(Hash!BBQ42 hash)
-	/// {
-	///     writeln( hash.toString(&customDigestCodeOfObj) );
-	/// }
-	/// -------------------
+	/++
+	Encodes the digest, salt and hash into a convenient forward-compatible
+	string format, ready for insertion into a database.
+	
+	To support additional digests besides the built-in (Phobos's CRC32, MD5,
+	RIPEMD160 and SHA), supply a custom delegate for digestCodeOfObj.
+	Your custom digestCodeOfObj only needs to handle OO-style digests.
+	As long as the OO-style digests were created using Phobos's
+	WrapperDigest template, the template-style version will be handled
+	automatically. You can defer to DAuth's defaultDigestCodeOfObj to
+	handle the built-in digests.
+	
+	Example:
+	-------------------
+	import std.digest.digest;
+	import dauth;
+	
+	struct BBQ42 {...}
+	static assert(isDigest!BBQ42);
+	alias BBQ42Digest = WrapperDigest!BBQ42;
+	
+	string customDigestCodeOfObj(Digest digest)
+	{
+	    if     (cast(BBQ42Digest)digest) return "BBQ42";
+	    else if(cast(FAQ17Digest)digest) return "FAQ17";
+	    else
+	        return defaultDigestCodeOfObj(digest);
+	}
+	
+	void doStuff(Hash!BBQ42 hash)
+	{
+	    writeln( hash.toString(&customDigestCodeOfObj) );
+	}
+	-------------------
+	+/
 	string toString(string delegate(Digest) digestCodeOfObj = toDelegate(&defaultDigestCodeOfObj))
 	{
 		Appender!string sink;
@@ -608,47 +638,49 @@ private Hash!TDigest makeHashImpl(TDigest)
 	return ret;
 }
 
-/// Parses a string that was encoded by Hash.toString.
-///
-/// Only OO-style digests are used since the digest is specified in the string
-/// and therefore only known at runtime.
-///
-/// Throws ConvException if the string is malformed.
-///
-/// To support additional digests besides the built-in (Phobos's CRC32, MD5,
-/// RIPEMD160 and SHA), supply a custom delegate for digestFromDAuthCode.
-/// You can defer to DAuth's defaultDigestFromCode to handle the
-/// built-in digests.
-///
-/// Similarly, to extend crypt(3)-style to support additional digests beyond
-/// DAuth's crypt(3) support, supply a custom delegate for digestFromCryptCode.
-/// The default implementation is defaultDigestFromCryptCode.
-///
-/// Example:
-/// -------------------
-/// import std.digest.digest;
-/// import dauth;
-/// 
-/// struct BBQ42 {...}
-/// static assert(isDigest!BBQ42);
-/// alias BBQ42Digest = WrapperDigest!BBQ42;
-/// 
-/// Digest customDigestFromCode(string digestCode)
-/// {
-///     switch(digestCode)
-///     {
-///     case "BBQ42": return new BBQ42Digest();
-///     case "FAQ17": return new FAQ17Digest();
-///     default:
-///         return defaultDigestFromCode(digestCode);
-///     }
-/// }
-/// 
-/// void doStuff(string hashString)
-/// {
-///     auto hash = parseHash(hashString, &customDigestFromCode);
-/// }
-/// -------------------
+/++
+Parses a string that was encoded by Hash.toString.
+
+Only OO-style digests are used since the digest is specified in the string
+and therefore only known at runtime.
+
+Throws ConvException if the string is malformed.
+
+To support additional digests besides the built-in (Phobos's CRC32, MD5,
+RIPEMD160 and SHA), supply a custom delegate for digestFromDAuthCode.
+You can defer to DAuth's defaultDigestFromCode to handle the
+built-in digests.
+
+Similarly, to extend crypt(3)-style to support additional digests beyond
+DAuth's crypt(3) support, supply a custom delegate for digestFromCryptCode.
+The default implementation is defaultDigestFromCryptCode.
+
+Example:
+-------------------
+import std.digest.digest;
+import dauth;
+
+struct BBQ42 {...}
+static assert(isDigest!BBQ42);
+alias BBQ42Digest = WrapperDigest!BBQ42;
+
+Digest customDigestFromCode(string digestCode)
+{
+    switch(digestCode)
+    {
+    case "BBQ42": return new BBQ42Digest();
+    case "FAQ17": return new FAQ17Digest();
+    default:
+        return defaultDigestFromCode(digestCode);
+    }
+}
+
+void doStuff(string hashString)
+{
+    auto hash = parseHash(hashString, &customDigestFromCode);
+}
+-------------------
++/
 Hash!Digest parseHash(string str,
 	Digest delegate(string) digestFromDAuthCode = toDelegate(&defaultDigestFromCode),
 	Digest delegate(string) digestFromCryptCode = toDelegate(&defaultDigestFromCryptCode))
@@ -739,11 +771,13 @@ Hash!Digest parseCryptHash(string str,
 	return result;
 }
 
-/// Validates a password against an existing salted hash.
-///
-/// If sHash is a Hash!Digest, then sHash.digest MUST be non-null. Otherwise
-/// this function will have no other way to determine what digest to match
-/// against, and an UnknownDigestException will be thrown.
+/++
+Validates a password against an existing salted hash.
+
+If sHash is a Hash!Digest, then sHash.digest MUST be non-null. Otherwise
+this function will have no other way to determine what digest to match
+against, and an UnknownDigestException will be thrown.
++/
 bool isSameHash(TDigest = DefaultDigest)(Password password, Hash!TDigest sHash,
 	Salter!TDigest salter = toDelegate(&defaultSalter!TDigest))
 	if(isDigest!TDigest)

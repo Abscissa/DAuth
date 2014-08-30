@@ -42,13 +42,17 @@ enum defaultPasswordChars = cast(immutable(ubyte)[]) (ascii.letters ~ ascii.digi
 /// In bytes. Must be a multiple of 4.
 enum defaultSaltLength = 32;
 
-/// In bytes of randomness, not length of token.
-/// Must be a multiple of 4. Although, due to usage of base64, using a multiple
-/// of 12 prevents a padding tilde from existing at the end of every token.
+/++
+In bytes of randomness, not length of token.
+Must be a multiple of 4. Although, due to usage of base64, using a multiple
+of 12 prevents a padding tilde from existing at the end of every token.
++/
 enum defaultTokenStrength = 36;
 
-/// RNGs used with DAuth must be either a isRandomStream, or
-/// a isUniformRNG input range that emits uint values.
+/++
+RNGs used with DAuth must be either a isRandomStream, or
+a isUniformRNG input range that emits uint values.
++/
 enum isDAuthRandom(T) =
 	isRandomStream!T ||
 	(isUniformRNG!T && is(ElementType!T == uint));
