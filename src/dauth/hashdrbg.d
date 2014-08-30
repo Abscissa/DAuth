@@ -1,8 +1,6 @@
 /++
 DAuth - Authentication Utility for D
 Hash_DRBG Cryptographic Random Number Generator
-
-Main module: $(LINK2 index.html,dauth)$(BR)
 +/
 
 module dauth.hashdrbg;

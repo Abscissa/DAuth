@@ -1,8 +1,6 @@
 /++
 DAuth - Authentication Utility for D
 Core package
-
-Main module: $(LINK2 index.html,dauth)$(BR)
 +/
 module dauth.core;
 
@@ -362,6 +360,8 @@ is automatically zeroed-out when there are no more references or when
 a new password is assigned.
 
 If you keep any direct references to Password.data, be aware it may get cleared.
+
+Create a Password via functions 'toPassword' or 'dupPassword'.
 
 The payload is a private struct that supports the following:
 

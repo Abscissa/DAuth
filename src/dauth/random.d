@@ -1,8 +1,6 @@
 /++
 DAuth - Authentication Utility for D
 Random generators
-
-Main module: $(LINK2 index.html,dauth)$(BR)
 +/
 
 module dauth.random;
