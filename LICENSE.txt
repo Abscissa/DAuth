@@ -1,4 +1,4 @@
-InstaUser is licensed under The zlib/libpng License:
+InstaUser-Store is licensed under The zlib/libpng License:
 -----------------------------------------------------------------
 
 Copyright (c) 2014 Nick Sabalausky

@@ -1,15 +1,15 @@
-/// InstaUser - User Account Library for D
+/// InstaUser-Store - User Account Library for D
 /// Data Store: In Memory
 ///
-/// Main module: $(LINK2 ../index.html,instauser)$(BR)
+/// Main module: $(LINK2 ../index.html,instauser.store)$(BR)
 
-module instauser.store.memory;
+module instauser.store.storage.memory;
 
 import std.digest.digest;
 import std.exception;
 
 import dauth.core;
-import instauser.core;
+import instauser.store.core;
 
 /++
 A non-permanent in-memory UserStore. Being memory-only, this will be wiped
@@ -90,7 +90,7 @@ class MemoryStore
 	}
 }
 
-version(InstaUser_Unittest)
+version(InstaUserStore_Unittest)
 unittest
 {
 	unitlog("Testing MemoryStore");
@@ -101,7 +101,7 @@ unittest
 	auto store = new MemoryStore();
 	assert( store.getUserCount() == 0 );
 	
-	auto instaUser = InstaUser!MemoryStore(store);
+	auto instaUser = InstaUserStore!MemoryStore(store);
 	assert( instaUser.getUserCount() == 0 );
 	
 	// Run standard tests

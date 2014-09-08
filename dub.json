@@ -1,8 +1,8 @@
 {
-	"name": "instauser",
+	"name": "instauser-store",
 	"description": "User account library",
 	"authors": ["Nick Sabalausky"],
-	"homepage": "https://github.com/abscissa/InstaUser",
+	"homepage": "https://github.com/abscissa/InstaUser-Store",
 	"license": "zlib/libpng",
 	"sourcePaths": ["src"],
 	"importPaths": ["src"],

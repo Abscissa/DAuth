@@ -1,5 +1,5 @@
-InstaUser - Changelog
-=================
+InstaUser-Store - Changelog
+===========================
 
 (Dates below are YYYY/MM/DD)
 

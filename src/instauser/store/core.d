@@ -1,9 +1,9 @@
-/// InstaUser - User Account Library for D
+/// InstaUser-Store - User Account Library for D
 /// Core module
 ///
-/// Main module: $(LINK2 index.html,instauser)$(BR)
+/// Main module: $(LINK2 index.html,instauser.store)$(BR)
 
-module instauser.core;
+module instauser.store.core;
 
 import std.digest.digest;
 import std.exception;
@@ -15,9 +15,9 @@ import dauth.core;
 version(Have_vibe_d)
 	import vibe.internal.meta.traits;
 
-version(InstaUser_Unittest)
+version(InstaUserStore_Unittest)
 {
-	version(InstaUser_Unittest_Quiet) {} else
+	version(InstaUserStore_Unittest_Quiet) {} else
 		version = Loud_Unittest;
 	
 	version(Loud_Unittest)
@@ -25,12 +25,12 @@ version(InstaUser_Unittest)
 	
 	// An internal helper function for unittests.
 	// Outputs a string and flushes stdout. Does nothing if this was
-	// compiled with -version=InstaUser_Unittest_Quiet.
+	// compiled with -version=InstaUserStore_Unittest_Quiet.
 	void unitlog(string str)
 	{
 		version(Loud_Unittest)
 		{
-			writeln("unittest InstaUser: ", str);
+			writeln("unittest InstaUser-Store: ", str);
 			stdout.flush();
 		}
 	}
@@ -132,7 +132,7 @@ template hasGetUserCount(T)
 /// Convenience alias for Nullable!(Hash!TDigest)
 alias NullableHash(TDigest) = Nullable!(Hash!TDigest);
 
-/// Thrown by InstaUser.createUser when trying to create a user that already exists.
+/// Thrown by InstaUserStore.createUser when trying to create a user that already exists.
 class UserAlreadyExistsException : Exception
 {
 	string name;
@@ -144,7 +144,7 @@ class UserAlreadyExistsException : Exception
 	}
 }
 
-/// Thrown by InstaUser.modifyUser and InstaUser.removeUser when the specified
+/// Thrown by InstaUserStore.modifyUser and InstaUserStore.removeUser when the specified
 /// user doesn't exist.
 class UserNotFoundException : Exception
 {
@@ -157,12 +157,12 @@ class UserNotFoundException : Exception
 	}
 }
 
-/// The main interface for the InstaUser library.
+/// The main interface for the InstaUser-Store library.
 ///
 /// Construct this with any UserStore and then create/validate/modify/delete
 /// users as desired. Passwords will automatically be hashed with random salts
 /// via $(LINK2 https://github.com/abscissa/DAuth, DAuth).
-struct InstaUser(Store)
+struct InstaUserStore(Store)
 {
 	Store store;
 	
@@ -268,7 +268,7 @@ struct InstaUser(Store)
 		store.init();
 	}
 	
-	/// Run standard set of tests on an InstaUser user store.
+	/// Run standard set of tests on an InstaUserStore user store.
 	///
 	/// This will PERMANENTLY DELETE ALL data in the store, so only use it
 	/// on a test store, not a live production one.

@@ -1,12 +1,12 @@
-/// InstaUser - User Account Library for D
+/// InstaUser-Store - User Account Library for D
 /// Data Store: MySQL-native
 ///
-/// Main module: $(LINK2 ../index.html,instauser)$(BR)
+/// Main module: $(LINK2 ../index.html,instauser.store)$(BR)
 
-module instauser.store.mysqln;
+module instauser.store.storage.mysqln;
 
 version(Have_mysql_native) {} else
-	static assert(false, "Module instauser.store.mysqln requires -version=Have_mysql_native");
+	static assert(false, "Module instauser.store.storage.mysqln requires -version=Have_mysql_native");
 
 import std.conv;
 import std.digest.digest;
@@ -15,7 +15,7 @@ import mysql.connection;
 import mysql.db;
 
 import dauth.core;
-import instauser.core;
+import instauser.store.core;
 
 /// Less confusing name for a MySQL connection.
 alias MySQLConnection = mysql.connection.Connection;
@@ -266,7 +266,7 @@ alias MySQLNativePlainStore = MySQLNativeStore!MySQLConnection;
 version(Have_vibe_d)
 	alias MySQLNativeVibePoolStore = MySQLNativeStore!MySQLConnectionPool; ///ditto
 
-version(InstaUser_Unittest)
+version(InstaUserStore_Unittest)
 {
 	private @property string unittestMySQLConnStrFile()
 	{
@@ -300,7 +300,7 @@ version(InstaUser_Unittest)
 	}
 }
 
-version(InstaUser_Unittest)
+version(InstaUserStore_Unittest)
 unittest
 {
 	import std.path : buildNormalizedPath;
@@ -316,13 +316,13 @@ unittest
 	auto store = new MySQLNativePlainStore(new MySQLConnection(unittestMySQLConnStr));
 	scope(exit) store.conn.close();
 	
-	auto instaUser = InstaUser!(MySQLNativePlainStore)(store);
+	auto instaUser = InstaUserStore!(MySQLNativePlainStore)(store);
 	
 	// Run standard tests
 	instaUser.unittestStore();
 }
 
-version(InstaUser_Unittest)
+version(InstaUserStore_Unittest)
 version(Have_vibe_d)
 unittest
 {
@@ -332,7 +332,7 @@ unittest
 	static assert(hasGetUserCount!(MySQLNativeVibePoolStore));
 
 	auto store = new MySQLNativeVibePoolStore(new MySQLConnectionPool(unittestMySQLConnStr));
-	auto instaUser = InstaUser!(MySQLNativeVibePoolStore)(store);
+	auto instaUser = InstaUserStore!(MySQLNativeVibePoolStore)(store);
 	
 	// Run standard tests
 	instaUser.unittestStore();
