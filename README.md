@@ -6,4 +6,4 @@ InstaUser-Store is a [D](http://dlang.org) library which uses
 secure password-based user accounts into your own software or web sites, using
 any custom data store.
 
-[InstaUser Changelog](https://github.com/Abscissa/InstaUser-Store/blob/master/CHANGELOG.md)
+[InstaUser-Store Changelog](https://github.com/Abscissa/InstaUser-Store/blob/master/CHANGELOG.md)
