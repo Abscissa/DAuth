@@ -1,0 +1,14 @@
+{
+	"name": "instauser-web",
+	"description": "Simple Web-based User Logins",
+	"authors": ["Nick Sabalausky"],
+	"homepage": "https://github.com/abscissa/InstaUser-Web",
+	"license": "zlib/libpng",
+	"sourcePaths": ["src"],
+	"importPaths": ["src"],
+	"dependencies": {
+		"dauth": "~master",
+		"instauser-store": "~>0.7.0",
+		"vibe-d": { "version": "~>0.7.20", "optional": false }
+	}
+}
