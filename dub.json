@@ -9,6 +9,6 @@
 	"dependencies": {
 		"dauth": "~master",
 		"mysql-native": { "version": "~master", "optional": false },
-		"vibe-d": { "version": "~>0.7.19", "optional": false }
+		"vibe-d": { "version": "~>0.7.20", "optional": false }
 	}
 }
