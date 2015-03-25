@@ -745,7 +745,7 @@ struct SHA(int blockSize, int digestSize)
                 uint index, padLen;
 
                 /* Save number of bits */
-                ubyte bits[8] = nativeToBigEndian(count[0]);
+                ubyte[8] bits = nativeToBigEndian(count[0]);
 
                 /* Pad out to 56 mod 64. */
                 index = (cast(uint)count[0] >> 3) & (64 - 1);
@@ -769,7 +769,7 @@ struct SHA(int blockSize, int digestSize)
                 uint index, padLen;
 
                 /* Save number of bits */
-                ubyte bits[16];
+                ubyte[16] bits;
                 bits[ 0..8] = nativeToBigEndian(count[1]);
                 bits[8..16] = nativeToBigEndian(count[0]);
 
