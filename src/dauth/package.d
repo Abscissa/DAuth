@@ -1,9 +1,9 @@
 ﻿/++
-DAuth v0.6.1 - Salted Hashed Password Library for D
+DAuth v0.6.2 - Salted Hashed Password Library for D
 
 Writen in the D programming language.
 
-Tested with DMD 2.064.2 through DMD 2.066
+Tested with DMD 2.064.2 through DMD 2.067.0
 
 Homepage:
 $(LINK https://github.com/abscissa/DAuth)

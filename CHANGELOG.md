@@ -3,6 +3,10 @@ DAuth - ChangeLog
 
 (Dates below are YYYY/MM/DD)
 
+v0.6.2 - 2015/03/25
+-------------------
+- **Fixed:** [#1](https://github.com/Abscissa/DAuth/issues/1), [#2](https://github.com/Abscissa/DAuth/issues/2): Compilation failure when using DUB and DMD 2.067 (@NCrashed)
+
 v0.6.1 - 2014/08/30 - Docs and crypt(3) formatting
 -------------------
 - **Enhancement:** Supports DMD 2.066.0. (Now supports DMD 2.064.2 through 2.066.0.)
