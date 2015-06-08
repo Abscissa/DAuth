@@ -3,6 +3,10 @@ InstaUser - ChangeLog
 
 (Dates below are YYYY/MM/DD)
 
+v0.7.0 - TBD
+-------------------
+- **Major Change:** Project is now named "InstaUser". DAuth has now become "InstaUser-Basic", and two new optional pillars have been added: InstaUser-Store and InstaUser-Web.
+
 v0.6.2 - 2015/03/25
 -------------------
 - **Fixed:** [#1](https://github.com/Abscissa/InstaUser/issues/1), [#2](https://github.com/Abscissa/InstaUser/issues/2): Compilation failure when using DUB and DMD 2.067 (@NCrashed)
