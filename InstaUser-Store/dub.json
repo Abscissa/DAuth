@@ -1,0 +1,14 @@
+{
+	"name": "instauser-store",
+	"description": "User account library",
+	"authors": ["Nick Sabalausky"],
+	"homepage": "https://github.com/abscissa/InstaUser-Store",
+	"license": "zlib/libpng",
+	"sourcePaths": ["src"],
+	"importPaths": ["src"],
+	"dependencies": {
+		"dauth": "~master",
+		"mysql-native": { "version": "~master", "optional": false },
+		"vibe-d": { "version": "~>0.7.20", "optional": false }
+	}
+}

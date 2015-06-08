@@ -1,0 +1,3 @@
+#!/bin/sh
+dmd -Isrc -c -op -Dddocs -version=Have_mysql_native -version=Have_vibe_d "$@" src/instauser/store/package.d src/instauser/core.d src/instauser/store/memory.d src/instauser/store/mysqln.d
+mv docs/src/instauser/store/package.html docs/src/instauser/store/index.html
