@@ -6,9 +6,13 @@
 	"license": "zlib/libpng",
 	"targetType": "none",
 	"dependencies": {
-		"InstaUser:dauth": "*"
+		"InstaUser:dauth": "*",
+		"InstaUser:Store": "*",
+		"InstaUser:Web": "*"
 	},
 	"subPackages": [
-		"./InstaUser-Basic/"
+		"./InstaUser-Basic/",
+		"./InstaUser-Store/",
+		"./InstaUser-Web/"
 	]
 }
