@@ -1,4 +1,4 @@
 InstaUser-Web - Simple Web-based User Logins
 ============================================
 
-[InstaUser-Web Changelog](https://github.com/Abscissa/InstaUser-Web/blob/master/CHANGELOG.md)
+[InstaUser Changelog](https://github.com/Abscissa/InstaUser/blob/master/CHANGELOG.md)

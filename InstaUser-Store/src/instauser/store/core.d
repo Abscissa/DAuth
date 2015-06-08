@@ -9,7 +9,7 @@ import std.digest.digest;
 import std.exception;
 import std.typecons;
 
-import dauth.core;
+import instauser.basic.core;
 
 // Manually import this to work around RDMD linking issue in Vibe.d
 version(Have_vibe_d)
@@ -161,7 +161,7 @@ class UserNotFoundException : Exception
 ///
 /// Construct this with any UserStore and then create/validate/modify/delete
 /// users as desired. Passwords will automatically be hashed with random salts
-/// via $(LINK2 https://github.com/abscissa/DAuth, DAuth).
+/// via $(LINK2 https://github.com/abscissa/InstaUser, InstaUser-Basic).
 struct InstaUserStore(Store)
 {
 	Store store;

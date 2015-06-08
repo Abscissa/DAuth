@@ -14,7 +14,7 @@ import std.exception;
 import mysql.connection;
 import mysql.db;
 
-import dauth.core;
+import instauser.basic.core;
 import instauser.store.core;
 
 /// Less confusing name for a MySQL connection.

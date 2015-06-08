@@ -8,7 +8,7 @@ module instauser.store.storage.memory;
 import std.digest.digest;
 import std.exception;
 
-import dauth.core;
+import instauser.basic.core;
 import instauser.store.core;
 
 /++

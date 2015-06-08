@@ -7,8 +7,8 @@
 	"sourcePaths": ["src"],
 	"importPaths": ["src"],
 	"dependencies": {
-		"dauth": "~>0.7.0",
-		"instauser-store": "~>0.7.0",
+		"InstaUser:Basic": "*",
+		"InstaUser:Store": "*",
 		"semitwistweb": "==0.0.1"
 	}
 }

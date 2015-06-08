@@ -8,7 +8,7 @@ Licensed under The zlib/libpng License
 Homepage:
 $(LINK https://github.com/abscissa/InstaUser-Store)
 
-Uses $(LINK2 https://github.com/abscissa/DAuth,DAuth)
+Uses $(LINK2 https://github.com/abscissa/InstaUser,InstaUser-Basic)
 
 Author: Nick Sabalausky
 
