@@ -1,8 +1,8 @@
 ﻿/++
-DAuth - Salted Hashed Password Library for D
+InstaUser-Basic - Salted Hashed Password Library for D
 Core package
 +/
-module dauth.core;
+module instauser.basic.core;
 
 import std.algorithm;
 import std.array;
@@ -20,22 +20,22 @@ import std.range;
 import std.traits;
 import std.typecons;
 
-import dauth.random : randomSalt;
-import dauth.hashdrbg;
+import instauser.basic.random : randomSalt;
+import instauser.basic.hashdrbg;
 
-// Only use dauth.sha if SHA-2 isn't in Phobos (ie, DMD 2.065 and below)
+// Only use instauser.basic.sha if SHA-2 isn't in Phobos (ie, DMD 2.065 and below)
 static if(!is(std.digest.sha.SHA512))
 {
-	import dauth.sha;
+	import instauser.basic.sha;
 
-	private alias SHA1 = dauth.sha.SHA1;
-	private alias SHA1Digest = dauth.sha.SHA1Digest;
-	private alias sha1Of = dauth.sha.sha1Of;
+	private alias SHA1 = instauser.basic.sha.SHA1;
+	private alias SHA1Digest = instauser.basic.sha.SHA1Digest;
+	private alias sha1Of = instauser.basic.sha.sha1Of;
 }
 
-version(DAuth_Unittest)
+version(InstaUserBasic_Unittest)
 {
-	version(DAuth_Unittest_Quiet) {} else
+	version(InstaUserBasic_Unittest_Quiet) {} else
 		version = Loud_Unittest;
 	
 	version(Loud_Unittest)
@@ -45,26 +45,26 @@ version(DAuth_Unittest)
 	{
 		version(Loud_Unittest)
 		{
-			writeln("unittest DAuth: ", str);
+			writeln("unittest InstaUser-Basic: ", str);
 			stdout.flush();
 		}
 	}
 }
 
-version(DAuth_AllowWeakSecurity) {} else
+version(InstaUser_AllowWeakSecurity) {} else
 {
 	version = DisallowWeakSecurity;
 }
 
 alias Salt = ubyte[]; /// Salt type
 alias Salter(TDigest) = void delegate(ref TDigest, Password, Salt); /// Convenience alias for salter delegates.
-alias DefaultCryptoRand = HashDRBGStream!(SHA512, "DAuth"); /// Default is Hash_DRBG using SHA-512
+alias DefaultCryptoRand = HashDRBGStream!(SHA512, "InstaUser"); /// Default is Hash_DRBG using SHA-512
 alias DefaultDigest = SHA512; /// Default is SHA-512
 alias DefaultDigestClass = WrapperDigest!DefaultDigest; /// OO-style version of 'DefaultDigest'.
 alias TokenBase64 = Base64Impl!('-', '_', '~'); /// Implementation of Base64 engine used for tokens.
 
 /++
-Default implementation of 'digestCodeOfObj' for DAuth-style hash strings.
+Default implementation of 'digestCodeOfObj' for InstaUser-style hash strings.
 See 'Hash!(TDigest).toString' for more info.
 +/
 string defaultDigestCodeOfObj(Digest digest)
@@ -84,7 +84,7 @@ string defaultDigestCodeOfObj(Digest digest)
 }
 
 /++
-Default implementation of 'digestFromCode' for DAuth-style hash strings.
+Default implementation of 'digestFromCode' for InstaUser-style hash strings.
 See 'parseHash' for more info.
 +/
 Digest defaultDigestFromCode(string digestCode)
@@ -239,14 +239,14 @@ class UnknownDigestException : Exception
 
 /++
 Thrown when a known-weak algortihm or setting it attempted, UNLESS
-compiled with '-version=DAuth_AllowWeakSecurity'
+compiled with '-version=InstaUser_AllowWeakSecurity'
 +/
 class KnownWeakException : Exception
 {
 	static enum message =
 		"This is known to be weak for salted password hashing. "~
-		"If you understand and accept the risks, you can force DAuth "~
-		"to allow it with -version=DAuth_AllowWeakSecurity";
+		"If you understand and accept the risks, you can force InstaUser "~
+		"to allow it with -version=InstaUser_AllowWeakSecurity";
 	
 	this(string algoName)
 	{
@@ -265,7 +265,7 @@ template isAnyDigest(TDigest)
 		is(TDigest : Digest);
 }
 
-version(DAuth_Unittest)
+version(InstaUserBasic_Unittest)
 unittest
 {
 	struct Foo {}
@@ -292,7 +292,7 @@ template AnyDigestType(TDigest)
 		alias AnyDigestType = ubyte[];
 }
 
-version(DAuth_Unittest)
+version(InstaUserBasic_Unittest)
 unittest
 {
 	struct Foo {}
@@ -310,7 +310,7 @@ template isHash(T)
 	enum isHash = is( Hash!(TemplateArgsOf!(T)[0]) == T );
 }
 
-version(DAuth_Unittest)
+version(InstaUserBasic_Unittest)
 unittest
 {
 	struct Foo {}
@@ -334,7 +334,7 @@ template DigestOf(T) if(isHash!T)
 	alias DigestOf = TemplateArgsOf!(T)[0];
 }
 
-version(DAuth_Unittest)
+version(InstaUserBasic_Unittest)
 unittest
 {
 	static assert(is( DigestOf!(Hash!SHA1  ) == SHA1  ));
@@ -478,13 +478,13 @@ struct Hash(TDigest) if(isAnyDigest!TDigest)
 	Your custom digestCodeOfObj only needs to handle OO-style digests.
 	As long as the OO-style digests were created using Phobos's
 	WrapperDigest template, the template-style version will be handled
-	automatically. You can defer to DAuth's defaultDigestCodeOfObj to
+	automatically. You can defer to InstaUser-Basic's defaultDigestCodeOfObj to
 	handle the built-in digests.
 	
 	Example:
 	-------------------
 	import std.digest.digest;
-	import dauth;
+	import instauser.basic;
 	
 	struct BBQ42 {...}
 	static assert(isDigest!BBQ42);
@@ -528,15 +528,15 @@ struct Hash(TDigest) if(isAnyDigest!TDigest)
 	}
 
 	/++
-	Just like toString, but instead of standard DAuth-style format, the
+	Just like toString, but instead of standard InstaUser-style format, the
 	output string is in the crypt(3)-style format.
 	
-	The crypt(3) format does not support all hash types, and DAuth doesn't
-	necessarily support all possible forms of crypt(3) hashes (although it
-	does strive to support as many as possible).
+	The crypt(3) format does not support all hash types, and InstaUser-Basic
+	doesn't necessarily support all possible forms of crypt(3) hashes (although
+	it does strive to support as many as possible).
 	
-	DAuth currently supports crypt(3)-style format for MD5, SHA256 and
-	SHA512 hashes. Other hashes (unless manually handled by a custom
+	InstaUser-Basic currently supports crypt(3)-style format for MD5, SHA256
+	and SHA512 hashes. Other hashes (unless manually handled by a custom
 	digestCodeOfObj) will cause an UnknownDigestException to be thrown.
 	
 	The default digestCodeOfObj for this function is defaultDigestCryptCodeOfObj.
@@ -585,7 +585,7 @@ Normally, the salt and password are combined as (psuedocode) 'salt~password'.
 There is no cryptographic benefit to combining the salt and password any
 other way. However, if you need to support an alternate method for
 compatibility purposes, you can do so by providing a custom salter delegate.
-See the implementation of DAuth's defaultSalter to see how to do this.
+See the implementation of InstaUser-Basic's defaultSalter to see how to do this.
 
 If using an OO-style Digest, then digest MUST be non-null. Otherwise,
 an UnknownDigestException will be thrown.
@@ -658,18 +658,18 @@ and therefore only known at runtime.
 Throws ConvException if the string is malformed.
 
 To support additional digests besides the built-in (Phobos's CRC32, MD5,
-RIPEMD160 and SHA), supply a custom delegate for digestFromDAuthCode.
-You can defer to DAuth's defaultDigestFromCode to handle the
+RIPEMD160 and SHA), supply a custom delegate for digestFromInstaUserCode.
+You can defer to InstaUser-Basic's defaultDigestFromCode to handle the
 built-in digests.
 
 Similarly, to extend crypt(3)-style to support additional digests beyond
-DAuth's crypt(3) support, supply a custom delegate for digestFromCryptCode.
+InstaUser-Basic's crypt(3) support, supply a custom delegate for digestFromCryptCode.
 The default implementation is defaultDigestFromCryptCode.
 
 Example:
 -------------------
 import std.digest.digest;
-import dauth;
+import instauser.basic;
 
 struct BBQ42 {...}
 static assert(isDigest!BBQ42);
@@ -693,26 +693,26 @@ void doStuff(string hashString)
 -------------------
 
 Optional_Params:
-digestFromDAuthCode - Default value is 'toDelegate(&defaultDigestFromCode)'
+digestFromInstaUserCode - Default value is 'toDelegate(&defaultDigestFromCode)'
 
 digestFromCryptCode - Default value is 'toDelegate(&defaultDigestFromCryptCode)'
 +/
 Hash!Digest parseHash(string str,
-	Digest delegate(string) digestFromDAuthCode = toDelegate(&defaultDigestFromCode),
+	Digest delegate(string) digestFromInstaUserCode = toDelegate(&defaultDigestFromCode),
 	Digest delegate(string) digestFromCryptCode = toDelegate(&defaultDigestFromCryptCode))
 {
 	enforceEx!ConvException(!str.empty);
 	if(str[0] == '[')
-		return parseDAuthHash(str, digestFromDAuthCode);
+		return parseInstaUserHash(str, digestFromInstaUserCode);
 	else if(str[0] == '$' || str.length == 13)
 		return parseCryptHash(str, digestFromCryptCode);
 	
-	throw new ConvException("Hash string is neither valid DAuth-style nor crypt-style");
+	throw new ConvException("Hash string is neither valid InstaUser-style nor crypt-style");
 }
 
 ///ditto
-Hash!Digest parseDAuthHash(string str,
-	Digest delegate(string) digestFromDAuthCode = toDelegate(&defaultDigestFromCode))
+Hash!Digest parseInstaUserHash(string str,
+	Digest delegate(string) digestFromInstaUserCode = toDelegate(&defaultDigestFromCode))
 {
 	// No need to mess with UTF
 	auto bytes = cast(immutable(ubyte)[]) str;
@@ -738,7 +738,7 @@ Hash!Digest parseDAuthHash(string str,
 	Hash!Digest result;
 	result.salt   = Base64.decode(salt);
 	result.hash   = Base64.decode(hash);
-	result.digest = digestFromDAuthCode(cast(string)digestCode);
+	result.digest = digestFromInstaUserCode(cast(string)digestCode);
 	
 	return result;
 }
@@ -861,7 +861,7 @@ isPasswordCorrect will become deprecated in a future version. Use isSameHash ins
 +/
 alias isPasswordCorrect = isSameHash;
 
-version(DAuth_Unittest)
+version(InstaUserBasic_Unittest)
 unittest
 {
 	// For validity of sanity checks, these sha/md5 and base64 strings
@@ -969,7 +969,7 @@ unittest
 	assertThrown!UnknownDigestException( makeHash(cast(Digest)null,     plainText1, cast(Salt)sha1Hash2[]) );
 
 	unitlog("Testing makeHash(pass)");
-	import dauth.random : randomPassword;
+	import instauser.basic.random : randomPassword;
 	auto resultRand1 = makeHash!SHA1(randomPassword());
 	auto resultRand2 = makeHash!SHA1(randomPassword());
 
@@ -979,17 +979,17 @@ unittest
 	assert(resultRand1.hash != resultRand2.hash);
 
 	unitlog("Testing parseHash()");
-	auto result2Parsed = parseDAuthHash( result2_512.toString() );
+	auto result2Parsed = parseInstaUserHash( result2_512.toString() );
 	assert(result2_512.salt       == result2Parsed.salt);
 	assert(result2_512.hash       == result2Parsed.hash);
 	assert(result2_512.toString() == result2Parsed.toString());
 
 	assert(makeHash(result2Parsed.digest, plainText1, result2Parsed.salt) == result2Parsed);
-	assertThrown!ConvException(parseDAuthHash( result2_512.toCryptString() ));
-	assert(parseHash( result2_512.toString() ).salt            == parseDAuthHash( result2_512.toString() ).salt);
-	assert(parseHash( result2_512.toString() ).hash            == parseDAuthHash( result2_512.toString() ).hash);
-	assert(parseHash( result2_512.toString() ).toString()      == parseDAuthHash( result2_512.toString() ).toString());
-	assert(parseHash( result2_512.toString() ).toCryptString() == parseDAuthHash( result2_512.toString() ).toCryptString());
+	assertThrown!ConvException(parseInstaUserHash( result2_512.toCryptString() ));
+	assert(parseHash( result2_512.toString() ).salt            == parseInstaUserHash( result2_512.toString() ).salt);
+	assert(parseHash( result2_512.toString() ).hash            == parseInstaUserHash( result2_512.toString() ).hash);
+	assert(parseHash( result2_512.toString() ).toString()      == parseInstaUserHash( result2_512.toString() ).toString());
+	assert(parseHash( result2_512.toString() ).toCryptString() == parseInstaUserHash( result2_512.toString() ).toCryptString());
 	
 	unitlog("Testing parseHash() - crypt(3)");
 	auto result2ParsedCrypt = parseCryptHash( result2_512.toCryptString() );
@@ -1078,17 +1078,17 @@ bool lengthConstantEquals(ubyte[] a, ubyte[] b)
 }
 
 // Borrowed from Phobos (TemplateArgsOf only exists in DMD 2.066 and up).
-package template DAuth_TemplateArgsOf(alias T : Base!Args, alias Base, Args...)
+package template InstaUser_TemplateArgsOf(alias T : Base!Args, alias Base, Args...)
 {
-	alias DAuth_TemplateArgsOf = Args;
+	alias InstaUser_TemplateArgsOf = Args;
 }
-package template DAuth_TemplateArgsOf(T : Base!Args, alias Base, Args...)
+package template InstaUser_TemplateArgsOf(T : Base!Args, alias Base, Args...)
 {
-	alias DAuth_TemplateArgsOf = Args;
+	alias InstaUser_TemplateArgsOf = Args;
 }
-static assert(is( DAuth_TemplateArgsOf!( Hash!SHA1   )[0] == SHA1   ));
-static assert(is( DAuth_TemplateArgsOf!( Hash!Digest )[0] == Digest ));
+static assert(is( InstaUser_TemplateArgsOf!( Hash!SHA1   )[0] == SHA1   ));
+static assert(is( InstaUser_TemplateArgsOf!( Hash!Digest )[0] == Digest ));
 
 private struct dummy(T) {}
 static if(!is(std.traits.TemplateArgsOf!(dummy!int)))
-	private alias TemplateArgsOf = DAuth_TemplateArgsOf;
+	private alias TemplateArgsOf = InstaUser_TemplateArgsOf;

@@ -1,9 +1,9 @@
 ﻿/++
-DAuth - Salted Hashed Password Library for D
+InstaUser-Basic - Salted Hashed Password Library for D
 Random generators
 +/
 
-module dauth.random;
+module instauser.basic.random;
 
 import std.algorithm;
 import std.array;
@@ -20,8 +20,8 @@ import std.random;
 import std.range;
 import std.typecons;
 
-import dauth.core;
-import dauth.hashdrbg;
+import instauser.basic.core;
+import instauser.basic.hashdrbg;
 
 /// In characters. Default length of randomly-generated passwords.
 enum defaultPasswordLength = 20;
@@ -48,12 +48,13 @@ of 12 prevents a padding tilde from existing at the end of every token.
 enum defaultTokenStrength = 36;
 
 /++
-RNGs used with DAuth must be either a isRandomStream, or
+RNGs used with InstaUser must be either a isRandomStream, or
 a isUniformRNG input range that emits uint values.
 +/
-enum isDAuthRandom(T) =
+enum isInstaUserRandom(T) =
 	isRandomStream!T ||
 	(isUniformRNG!T && is(ElementType!T == uint));
+alias isDAuthRandom = isInstaUserRandom; /// Temporary backwards-compatibility alias
 
 /++
 Generates a random password.
@@ -81,7 +82,7 @@ Password randomPassword(Rand = DefaultCryptoRand) (
 	size_t length = defaultPasswordLength,
 	const(ubyte)[] passwordChars = defaultPasswordChars
 )
-if(isDAuthRandom!Rand)
+if(isInstaUserRandom!Rand)
 out(result)
 {
 	assert(result.length == length);
@@ -99,7 +100,7 @@ Password randomPassword(Rand = DefaultCryptoRand) (
 	size_t length = defaultPasswordLength,
 	const(ubyte)[] passwordChars = defaultPasswordChars
 )
-if(isDAuthRandom!Rand)
+if(isInstaUserRandom!Rand)
 out(result)
 {
 	assert(result.length == length);
@@ -117,7 +118,7 @@ void randomPassword(Rand = DefaultCryptoRand, Sink)(
 	size_t length = defaultPasswordLength,
 	const(ubyte)[] passwordChars = defaultPasswordChars
 )
-if( isDAuthRandom!Rand && isOutputRange!(Sink, ubyte) )
+if( isInstaUserRandom!Rand && isOutputRange!(Sink, ubyte) )
 {
 	Rand rand;
 	rand.initRand();
@@ -130,7 +131,7 @@ void randomPassword(Rand = DefaultCryptoRand, Sink) (
 	size_t length = defaultPasswordLength,
 	const(ubyte)[] passwordChars = defaultPasswordChars
 )
-if( isDAuthRandom!Rand && isOutputRange!(Sink, ubyte) )
+if( isInstaUserRandom!Rand && isOutputRange!(Sink, ubyte) )
 {
 	enforce(passwordChars.length >= 2);
 	
@@ -148,7 +149,7 @@ if( isDAuthRandom!Rand && isOutputRange!(Sink, ubyte) )
 	}
 }
 
-version(DAuth_Unittest)
+version(InstaUserBasic_Unittest)
 unittest
 {
 	unitlog("Testing randomPassword");
@@ -291,19 +292,19 @@ Rand - Default value is 'DefaultCryptoRand'
 length - Default value is 'defaultSaltLength'
 +/
 Salt randomSalt(Rand = DefaultCryptoRand)(size_t length = defaultSaltLength)
-	if(isDAuthRandom!Rand)
+	if(isInstaUserRandom!Rand)
 {
 	return randomBytes!Rand(length);
 }
 
 ///ditto
 Salt randomSalt(Rand = DefaultCryptoRand)(ref Rand rand, size_t length = defaultSaltLength)
-	if(isDAuthRandom!Rand)
+	if(isInstaUserRandom!Rand)
 {
 	return randomBytes(length, rand);
 }
 
-version(DAuth_Unittest)
+version(InstaUserBasic_Unittest)
 unittest
 {
 	unitlog("Testing randomSalt");
@@ -366,19 +367,19 @@ Rand - Default value is 'DefaultCryptoRand'
 strength - Default value is 'defaultTokenStrength'
 +/
 string randomToken(Rand = DefaultCryptoRand)(size_t strength = defaultTokenStrength)
-	if(isDAuthRandom!Rand)
+	if(isInstaUserRandom!Rand)
 {
 	return TokenBase64.encode( randomBytes!Rand(strength) );
 }
 
 ///ditto
 string randomToken(Rand = DefaultCryptoRand)(ref Rand rand, size_t strength = defaultTokenStrength)
-	if(isDAuthRandom!Rand)
+	if(isInstaUserRandom!Rand)
 {
 	return TokenBase64.encode( randomBytes(strength, rand) );
 }
 
-version(DAuth_Unittest)
+version(InstaUserBasic_Unittest)
 unittest
 {
 	unitlog("Testing randomToken");
@@ -434,7 +435,7 @@ unittest
 
 /// numBytes must be a multiple of 4, or this will throw an Exception
 ubyte[] randomBytes(Rand = DefaultCryptoRand)(size_t numBytes)
-	if(isDAuthRandom!Rand)
+	if(isInstaUserRandom!Rand)
 {
 	Rand rand;
 	rand.initRand();
@@ -443,7 +444,7 @@ ubyte[] randomBytes(Rand = DefaultCryptoRand)(size_t numBytes)
 
 ///ditto
 ubyte[] randomBytes(Rand = DefaultCryptoRand)(size_t numBytes, ref Rand rand)
-	if(isDAuthRandom!Rand)
+	if(isInstaUserRandom!Rand)
 out(result)
 {
 	assert(result.length == numBytes);
@@ -467,7 +468,7 @@ body
 }
 
 private void initRand(Rand)(ref Rand rand)
-	if(isDAuthRandom!Rand)
+	if(isInstaUserRandom!Rand)
 {
 	static if(isSeedable!Rand)
 		rand.seed(unpredictableSeed);

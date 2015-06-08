@@ -1,12 +1,12 @@
 ﻿// Written in the D programming language.
 /**
-This has been temporarily added to DAuth since it doesn't exist in Phobos
-before DMD 2.066:
+This has been temporarily added to InstaUser-Basic since it doesn't exist in
+Phobos before DMD 2.066:
 $(LINK https://github.com/D-Programming-Language/phobos/pull/2129)
 
-On DMD 2.066 and up, DAuth uses std.digest.sha *instead* of this module.
+On DMD 2.066 and up, InstaUser-Basic uses std.digest.sha *instead* of this module.
 
-Main module: $(LINK2 index.html,dauth)$(BR)
+Main module: $(LINK2 index.html,instauser.basic)$(BR)
 
  * Computes SHA1 and SHA2 hashes of arbitrary data. SHA hashes are 20 to 64 byte
  * quantities (depending on the SHA algorithm) that are like a checksum or CRC,
@@ -51,7 +51,7 @@ Main module: $(LINK2 index.html,dauth)$(BR)
  *          http://www.boost.org/LICENSE_1_0.txt)
  */
 //module std.digest.sha;
-module dauth.sha;
+module instauser.basic.sha;
 
 ///
 unittest

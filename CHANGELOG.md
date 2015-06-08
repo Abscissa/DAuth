@@ -1,11 +1,11 @@
-DAuth - ChangeLog
-=================
+InstaUser - ChangeLog
+=====================
 
 (Dates below are YYYY/MM/DD)
 
 v0.6.2 - 2015/03/25
 -------------------
-- **Fixed:** [#1](https://github.com/Abscissa/DAuth/issues/1), [#2](https://github.com/Abscissa/DAuth/issues/2): Compilation failure when using DUB and DMD 2.067 (@NCrashed)
+- **Fixed:** [#1](https://github.com/Abscissa/InstaUser/issues/1), [#2](https://github.com/Abscissa/InstaUser/issues/2): Compilation failure when using DUB and DMD 2.067 (@NCrashed)
 
 v0.6.1 - 2014/08/30 - Docs and crypt(3) formatting
 -------------------

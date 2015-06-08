@@ -1,22 +1,22 @@
-DAuth - Salted Hashed Password Library for D
-============================================
+InstaUser-Basic - Salted Hashed Password Library for D
+======================================================
 
-[[ChangeLog](https://github.com/Abscissa/DAuth/blob/master/CHANGELOG.md)] [[API Reference](http://semitwist.com/dauth/)]
+[[ChangeLog](https://github.com/Abscissa/InstaUser/blob/master/CHANGELOG.md)] [[API Reference](http://semitwist.com/dauth/)]
 
-DAuth (soon to be rebranded as "InstaUser Basic") is an [open-source](https://github.com/Abscissa/DAuth/blob/master/LICENSE.txt) [salted password hash](http://en.wikipedia.org/wiki/Salt_%28cryptography%29) authentication library for [D](http://dlang.org). It provides a simple, yet flexible API. With it, your software can easily incorporate user accounts with reliable, upgradable security.
+InstaUser-Basic (formerly "DAuth"), as the core portion [InstaUser](https://github.com/Abscissa/InstaUser), is an [open-source](https://github.com/Abscissa/InstaUser/blob/master/LICENSE.txt) [salted password hash](http://en.wikipedia.org/wiki/Salt_%28cryptography%29) authentication library for [D](http://dlang.org). It provides a simple, yet flexible API. With it, your software can easily incorporate user accounts with reliable, upgradable security.
 
-You can have as much or as little control as you need. This makes DAuth suitable for both new projects and interfacing with any existing hashed-password store.
+You can have as much or as little control as you need. This makes InstaUser-Basic suitable for both new projects and interfacing with any existing hashed-password store.
 
-By default, DAuth uses known-good hashing and randomization algorithms (currently SHA-512 and Hash_DRBG), but it accepts any [Phobos](http://dlang.org/phobos/)-compatible [hash digest](http://dlang.org/phobos/std_digest_digest.html) or [random number generator](http://dlang.org/phobos/std_random.html).
+By default, InstaUser-Basic uses known-good hashing and randomization algorithms (currently SHA-512 and Hash_DRBG), but it accepts any [Phobos](http://dlang.org/phobos/)-compatible [hash digest](http://dlang.org/phobos/std_digest_digest.html) or [random number generator](http://dlang.org/phobos/std_random.html).
 
-DAuth's main interface is makeHash and isSameHash:
+InstaUser-Basic's main interface is makeHash and isSameHash:
 
 - ```makeHash(Password)```: Generates a salted hash for a password.
 
 - ```isSameHash(Password, Hash)```: Validates a password against an existing hash. The hashes are compared using a ["length-constant" time](https://crackstation.net/hashing-security.htm) algorithm to thwart timing-based attacks.
 
 ```d
-import dauth;
+import instauser.basic;
 //...
 char[] input = ...;
 Password pass = toPassword(input); // Ref counted with automatic memory zeroing
@@ -30,9 +30,9 @@ bool ok1 = isSameHash(pass, parseHash("[SHA512]d93Tp...ULle$my7MSJu...NDtd5RG"))
 bool ok2 = isSameHash(pass, parseHash("$6$d93Tp...ULle$my7MSJu...NDtd5RG"));
 ```
 
-The library provides a forward-compatible string-based hash format for easy storage and retrieval using any hash digest type. It also has native support for Unix [crypt(3)](https://en.wikipedia.org/wiki/Crypt_%28C%29)-style hash strings for MD5, SHA-256 and SHA-512. To avoid accidental usage of low-security, hash digests which DAuth knows to provide inferior secury (such as MD5) require a clearly-named compiler flag to be used: ```-version=DAuth_AllowWeakSecurity```.
+The library provides a forward-compatible string-based hash format for easy storage and retrieval using any hash digest type. It also has native support for Unix [crypt(3)](https://en.wikipedia.org/wiki/Crypt_%28C%29)-style hash strings for MD5, SHA-256 and SHA-512. To avoid accidental usage of low-security, hash digests which InstaUser-Basic knows to provide inferior secury (such as MD5) require a clearly-named compiler flag to be used: ```-version=InstaUser_AllowWeakSecurity```.
 
-Additionally, there is a [```dauth.random```](http://semitwist.com/dauth/dauth/random.html) module with functions for randomly generating [salts](http://semitwist.com/dauth/dauth/random/randomSalt.html), [passwords](http://semitwist.com/dauth/dauth/random/randomPassword.html) and [single-use tokens](http://semitwist.com/dauth/dauth/random/randomToken.html):
+Additionally, there is a [```instauser.basic.random```](http://semitwist.com/dauth/dauth/random.html) module with functions for randomly generating [salts](http://semitwist.com/dauth/dauth/random/randomSalt.html), [passwords](http://semitwist.com/dauth/dauth/random/randomPassword.html) and [single-use tokens](http://semitwist.com/dauth/dauth/random/randomToken.html):
 
 ```d
 // All parameters are optional: Desired length, random number generator,
@@ -52,7 +52,7 @@ Typical Usage Examples
 See also: [API Reference](http://semitwist.com/dauth/)
 
 ```d
-import dauth;
+import instauser.basic;
 
 // Your code to save/load from a database or other storage:
 void saveUserPassword(string user, string passhash) {...}
@@ -73,13 +73,13 @@ bool validateUser(string user, char[] pass)
 
 In that example:
 
-```setPassword()``` uses DAuth to store randomly-salted password hashes, using the default hashing digest (currently SHA-512), in a forward-compatible ASCII-safe text format. The format is mostly a form of Base64, and similar to [crypt(3)](https://en.wikipedia.org/wiki/Crypt_%28C%29) but more readable and flexible. The hash digest (ex: "SHA512") is stored as part of the ```hashString```, so if you upgrade to a different hashing digest, any existing accounts using the old digest will automatically remain accessible.
+```setPassword()``` uses InstaUser-Basic to store randomly-salted password hashes, using the default hashing digest (currently SHA-512), in a forward-compatible ASCII-safe text format. The format is mostly a form of Base64, and similar to [crypt(3)](https://en.wikipedia.org/wiki/Crypt_%28C%29) but more readable and flexible. The hash digest (ex: "SHA512") is stored as part of the ```hashString```, so if you upgrade to a different hashing digest, any existing accounts using the old digest will automatically remain accessible.
 
-```validateUser()``` is automatically compatible with all supported DAuth-style and crypt(3)-style string formats...not just whatever format and digest ```setPassword``` happens to be using. If you wish to restrict the accepted formats and encodings, you can easily do that too.
+```validateUser()``` is automatically compatible with all supported InstaUser-style and crypt(3)-style string formats...not just whatever format and digest ```setPassword``` happens to be using. If you wish to restrict the accepted formats and encodings, you can easily do that too.
 
 You may have noticed the passwords are mutable character arrays, not strings. This is for a reason:
 
-DAuth stores passwords in a type named [```Password```](http://semitwist.com/dauth/dauth/core/Password.html). This is a reference-counted struct that automatically zero's out the password data in memory before replacing the data or deallocating it. A ```dupPassword(string)``` is provided if you really need it, but this is not recommended (because a string's memory buffer is immutable and usually garbage-collected, and therefore can't be reliably zero'd out). Ultimately, this helps you decrease the likelihood of raw passwords sticking around in memory longer than necessary. Thus, with proper care when reading the password from your user, your user's passwords may be less likely to be exposed in the event of a memory-sniffing attack on your program.
+InstaUser stores passwords in a type named [```Password```](http://semitwist.com/dauth/dauth/core/Password.html). This is a reference-counted struct that automatically zero's out the password data in memory before replacing the data or deallocating it. A ```dupPassword(string)``` is provided if you really need it, but this is not recommended (because a string's memory buffer is immutable and usually garbage-collected, and therefore can't be reliably zero'd out). Ultimately, this helps you decrease the likelihood of raw passwords sticking around in memory longer than necessary. Thus, with proper care when reading the password from your user, your user's passwords may be less likely to be exposed in the event of a memory-sniffing attack on your program.
 
 To ensure compatibility with both existing infrastructure and future cryptographic developments, nearly any aspect of the authentication system can be customized:
 
@@ -101,7 +101,7 @@ Here's a more customized usage example:
 import std.digest.md;
 import std.exception;
 import std.random;
-import dauth;
+import instauser.basic;
 
 // Your code to save/load from a database or other storage:
 void saveUserInfo(string user, string digest, string passhash, ubyte[] salt) {...}
@@ -111,9 +111,9 @@ string loadUserDigest(string user) {...}
 
 void setPassword(string user, char[] pass)
 {
-	// DAuth knows that MinstdRand and MD5 do NOT provide crypto-grade
+	// InstaUser-Basic knows that MinstdRand and MD5 do NOT provide crypto-grade
 	// security, so it won't allow the following to compile unless you
-	// include the compiler flag: -version=DAuth_AllowWeakSecurity
+	// include the compiler flag: -version=InstaUser_AllowWeakSecurity
 	
 	// Note: This randomizer is not actually suitable for crypto purposes.
 	static MinstdRand rand;
@@ -135,30 +135,11 @@ bool validateUser(string user, char[] pass)
 }
 ```
 
-A Note About DAuth's Scope
---------------------------
-DAuth isn't intended to directly provide any encryption, hashing, or random number generating algorithms, and tries to leave this up to other libraries (relying on the [Phobos](http://dlang.org/phobos/index.html)-defined protocols for [digests](http://dlang.org/phobos/std_digest_digest.html) and [random number generators](http://dlang.org/phobos/std_random.html)).
-
-At the moment however, DAuth does provide implementations of [SHA-2](http://en.wikipedia.org/wiki/Sha2) and [Hash_DRBG](http://csrc.nist.gov/publications/nistpubs/800-90A/SP800-90A.pdf) because (as of DMD 2.066.0) Phobos lacks a [cryptographically secure psuedorandom number generator](http://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator) and didn't gain SHA-2 until recently (v2.066.0). DAuth's intention is to migrate Hash_DRBG over to Phobos and eventually eliminate both that and SHA-2 from DAuth itself.
-
-Notes About DAuth's Priorities
+A Note About InstaUser's Scope
 ------------------------------
-DAuth's default settings and behaviors are specifically chosen with this order of priorities in mind:
+InstaUser isn't intended to directly provide any encryption, hashing, or random number generating algorithms, and tries to leave this up to other libraries (relying on the [Phobos](http://dlang.org/phobos/index.html)-defined protocols for [digests](http://dlang.org/phobos/std_digest_digest.html) and [random number generators](http://dlang.org/phobos/std_random.html)).
 
-1. Flexibility (Top Priority)
-2. Overall Security
-3. Reliability/Correctness of User Code
-4. Cryptographic Security
-5. Convenience
-6. Efficiency (Lower Priority, but still important)
-
-It may seem strange that "Flexibility" is \#1, even ahead of security, but that's necessary to ensure this library can be used in all potential use-cases (for example, to interface with a legacy system that uses a known-insecure crypto). After all, if this can't be used, it can't provide any security at all.
-
-DAuth does take steps to encourage good security practices, and to help developers achieve it, but ultimately the library's user is responsible for their own security-related choices.
-
-Similarly, it may be surprising that "Cryptographic Security" is ranked below "Reliability/Correctness". However, bugs can often be an even greater threat to overall security than cryptographic weaknesses - and in unpredictable ways.
-
-Convenience is ranked slightly above efficiency because it directly encourages this library's actual usage, and thereby encourages security. Improved efficiency, when needed, can always be tweaked as necessary.
+At the moment however, InstaUser-Basic does provide implementations of [SHA-2](http://en.wikipedia.org/wiki/Sha2) and [Hash_DRBG](http://csrc.nist.gov/publications/nistpubs/800-90A/SP800-90A.pdf) because (as of DMD 2.066.0) Phobos lacks a [cryptographically secure psuedorandom number generator](http://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator) and didn't gain SHA-2 until recently (v2.066.0). The intention is to migrate Hash_DRBG over to Phobos and eventually eliminate both that and SHA-2 from InstaUser-Basic itself.
 
 See also
 --------

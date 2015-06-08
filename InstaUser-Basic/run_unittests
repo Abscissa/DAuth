@@ -1,2 +1,2 @@
 #!/bin/sh
-rdmd -unittest -debug -g -version=DAuth_AllowWeakSecurity -version=DAuth_Unittest -Isrc -main --force "$@" src/dauth/package.d
+rdmd -unittest -debug -g -version=InstaUser_AllowWeakSecurity -version=InstaUserBasic_Unittest -Isrc -main --force "$@" src/instauser/basic/package.d

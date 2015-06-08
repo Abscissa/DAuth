@@ -1,9 +1,9 @@
 ﻿/++
-DAuth - Salted Hashed Password Library for D
+InstaUser-Basic - Salted Hashed Password Library for D
 Hash_DRBG Cryptographic Random Number Generator
 +/
 
-module dauth.hashdrbg;
+module instauser.basic.hashdrbg;
 
 import std.conv;
 import std.exception;
@@ -14,19 +14,19 @@ import std.traits;
 import std.typecons;
 import std.typetuple;
 
-import dauth.core;
+import instauser.basic.core;
 
-// Only use dauth.sha if SHA-2 isn't in Phobos (ie, DMD 2.065 and below)
+// Only use instauser.basic.sha if SHA-2 isn't in Phobos (ie, DMD 2.065 and below)
 import phobos_sha = std.digest.sha;
 static if(!is(phobos_sha.SHA512))
-	import dauth.sha;
+	import instauser.basic.sha;
 else
 	import std.digest.sha;
 
 // TemplateArgsOf only exists in Phobos of DMD 2.066 and up
 private struct dummy(T) {}
 static if(!is(std.traits.TemplateArgsOf!(dummy!int)))
-	private alias TemplateArgsOf = DAuth_TemplateArgsOf;
+	private alias TemplateArgsOf = InstaUser_TemplateArgsOf;
 
 version(Windows)
 {
@@ -652,7 +652,7 @@ static assert(isUniformRNG!(HashDRBG!(uint, SHA256), uint));
 static assert(isUniformRNG!(HashDRBG!(uint, SHA256, "custom"), uint));
 static assert(isUniformRNG!(HashDRBG!(uint, SHA256, "custom", SystemEntropyStream!()), uint));
 
-version(DAuth_Unittest)
+version(InstaUserBasic_Unittest)
 unittest
 {
 	unitlog("Testing HashDRBGStream.incrementHash");
@@ -666,7 +666,7 @@ unittest
 	assert(val == expected);
 }
 
-version(DAuth_Unittest)
+version(InstaUserBasic_Unittest)
 unittest
 {
 	unitlog("Testing HashDRBGStream.addHash(arr,arr,arr)");
@@ -682,7 +682,7 @@ unittest
 	assert(result == expected);
 }
 
-version(DAuth_Unittest)
+version(InstaUserBasic_Unittest)
 unittest
 {
 	unitlog("Testing HashDRBGStream.addHash(arr,int,arr)");
@@ -789,7 +789,7 @@ struct WrappedStreamRNG(RandomStream, UIntType)
 	enum max = UIntType.max; /// Largest generated value.
 }
 
-version(DAuth_Unittest)
+version(InstaUserBasic_Unittest)
 unittest
 {
 	alias RandStreamTypes = TypeTuple!(
@@ -845,7 +845,7 @@ unittest
 	}
 }
 
-version(DAuth_Unittest)
+version(InstaUserBasic_Unittest)
 unittest
 {
 	foreach(Rand; TypeTuple!(SystemEntropy, HashDRBG))
@@ -867,7 +867,7 @@ unittest
 	}
 }
 
-version(DAuth_Unittest)
+version(InstaUserBasic_Unittest)
 unittest
 {
 	// Don't test ubyte or ushort versions here because legitimate repeated

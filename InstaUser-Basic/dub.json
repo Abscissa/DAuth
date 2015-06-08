@@ -1,8 +1,8 @@
 {
-	"name": "dauth",
+	"name": "Basic",
 	"description": "Authentication utility for systems based on salted password hashes.",
 	"authors": ["Nick Sabalausky"],
-	"homepage": "https://github.com/abscissa/DAuth",
+	"homepage": "https://github.com/abscissa/InstaUser",
 	"license": "zlib/libpng",
 	"sourcePaths": ["src"],
 	"importPaths": ["src"]
