@@ -7,8 +7,8 @@
 	"sourcePaths": ["src"],
 	"importPaths": ["src"],
 	"dependencies": {
-		"dauth": "~master",
+		"dauth": "~>0.7.0",
 		"instauser-store": "~>0.7.0",
-		"vibe-d": { "version": "~>0.7.20", "optional": false }
+		"semitwistweb": "==0.0.1"
 	}
 }
