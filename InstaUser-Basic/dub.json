@@ -1,14 +1,9 @@
 {
-	"name": "InstaUser",
+	"name": "dauth",
 	"description": "Authentication utility for systems based on salted password hashes.",
 	"authors": ["Nick Sabalausky"],
 	"homepage": "https://github.com/abscissa/DAuth",
 	"license": "zlib/libpng",
-	"targetType": "none",
-	"dependencies": {
-		"InstaUser:dauth": "*"
-	},
-	"subPackages": [
-		"./InstaUser-Basic/"
-	]
+	"sourcePaths": ["src"],
+	"importPaths": ["src"]
 }

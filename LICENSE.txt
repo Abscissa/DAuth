@@ -1,5 +1,5 @@
 sha.d is licensed under Boost Software License. Aside
-from that, DAuth is licensed under The zlib/libpng License:
+from that, InstaUser is licensed under The zlib/libpng License:
 -----------------------------------------------------------------
 
 Copyright (c) 2014 Nick Sabalausky
