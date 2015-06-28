@@ -2,7 +2,7 @@ sha.d is licensed under Boost Software License. Aside
 from that, InstaUser is licensed under The zlib/libpng License:
 -----------------------------------------------------------------
 
-Copyright (c) 2014 Nick Sabalausky
+Copyright (c) 2014-2015 Nick Sabalausky
 
 This software is provided 'as-is', without any express or implied
 warranty. In no event will the authors be held liable for any damages
