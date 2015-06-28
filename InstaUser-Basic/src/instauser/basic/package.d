@@ -48,7 +48,7 @@ module instauser.basic;
 public import instauser.basic.core;
 public import instauser.basic.random;
 
-version(InstaUserBasic_Docs)        version = includeEverything;
+version(InstaUser_Docs)             version = includeEverything;
 version(InstaUserBasic_PrebuiltLib) version = includeEverything;
 version(InstaUserBasic_Unittest)    version = includeEverything;
 
