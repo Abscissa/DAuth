@@ -48,7 +48,11 @@ module instauser.basic;
 public import instauser.basic.core;
 public import instauser.basic.random;
 
-version(InstaUserBasic_Unittest)
+version(InstaUserBasic_Docs)        version = includeEverything;
+version(InstaUserBasic_PrebuiltLib) version = includeEverything;
+version(InstaUserBasic_Unittest)    version = includeEverything;
+
+version(includeEverything)
 {
 	import instauser.basic.sha;
 	import instauser.basic.hashdrbg;

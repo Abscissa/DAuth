@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Ensure dub-data-mod is built
+cd $2
+dub build
+
+# Ensure safearg is built
+cd $3
+dub build
+
+# Compile
+cd $1
+$2bin/dub-data-mod describe --compiler=dmd --config=tests --data-0 --data=options --data=versions --data=import-paths | $3bin/safearg --post=src/instauser/basic/package.d rdmd -unittest -main --force

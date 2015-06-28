@@ -1,5 +1,5 @@
 {
-	"name": "Web",
+	"name": "instauser-web",
 	"description": "Simple Web-based User Logins",
 	"authors": ["Nick Sabalausky"],
 	"homepage": "https://github.com/abscissa/InstaUser-Web",
@@ -7,8 +7,8 @@
 	"sourcePaths": ["src"],
 	"importPaths": ["src"],
 	"dependencies": {
-		"InstaUser:Basic": "*",
-		"InstaUser:Store": "*",
+		"instauser:instauser-basic": "*",
+		"instauser:instauser-store": "*",
 		"semitwistweb": "==0.0.1"
 	}
 }

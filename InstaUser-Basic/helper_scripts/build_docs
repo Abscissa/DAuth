@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# Ensure ddox is built
+cd $2
+dub build
+
+# Build docs
+cd $1
+rdmd -Isrc --build-only --force -c -Dddocs_tmp -X -Xfdocs/docs.json -version=InstaUserBasic_Docs src/instauser/basic/package.d
+rm -rf docs_tmp
+rm src/instauser/basic/package
+$2/ddox filter docs/docs.json --min-protection=Protected
+$2/ddox generate-html docs/docs.json docs/public --navigation-type=ModuleTree
