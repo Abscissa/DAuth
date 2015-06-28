@@ -20,8 +20,8 @@
 			},
 
 			"versions": ["InstaUserBasic_PrebuiltLib"],
-			"postBuildCommands-posix":   ["cd $PACKAGE_DIR && helper/build_lib $PACKAGE_DIR $DUB_DATA_MOD_PACKAGE_DIR $SAFEARG_PACKAGE_DIR"],
-			"postBuildCommands-windows": ["cd /D $PACKAGE_DIR && helper\\build_lib $PACKAGE_DIR $DUB_DATA_MOD_PACKAGE_DIR $SAFEARG_PACKAGE_DIR"]
+			"postBuildCommands-posix":   ["cd $PACKAGE_DIR && ../helper/build_lib $PACKAGE_DIR $DUB_DATA_MOD_PACKAGE_DIR $SAFEARG_PACKAGE_DIR"],
+			"postBuildCommands-windows": ["cd /D $PACKAGE_DIR && ..\\helper\\build_lib $PACKAGE_DIR $DUB_DATA_MOD_PACKAGE_DIR $SAFEARG_PACKAGE_DIR"]
 		},
 		{
 			"name": "tests",
@@ -34,8 +34,8 @@
 			},
 
 			"versions": ["InstaUser_AllowWeakSecurity", "InstaUserBasic_Unittest"],
-			"postBuildCommands-posix":   ["cd $PACKAGE_DIR && helper/build_tests $PACKAGE_DIR $DUB_DATA_MOD_PACKAGE_DIR $SAFEARG_PACKAGE_DIR"],
-			"postBuildCommands-windows": ["cd /D $PACKAGE_DIR && helper\\build_tests $PACKAGE_DIR $DUB_DATA_MOD_PACKAGE_DIR $SAFEARG_PACKAGE_DIR"]
+			"postBuildCommands-posix":   ["cd $PACKAGE_DIR && ../helper/build_tests $PACKAGE_DIR $DUB_DATA_MOD_PACKAGE_DIR $SAFEARG_PACKAGE_DIR"],
+			"postBuildCommands-windows": ["cd /D $PACKAGE_DIR && ..\\helper\\build_tests $PACKAGE_DIR $DUB_DATA_MOD_PACKAGE_DIR $SAFEARG_PACKAGE_DIR"]
 		},
 		{
 			"name": "docs",
@@ -46,8 +46,8 @@
 			},
 
 			"versions": ["InstaUserBasic_Docs"],
-			"postBuildCommands-posix":   ["cd $PACKAGE_DIR && helper/build_docs $PACKAGE_DIR $DDOX_PACKAGE_DIR"],
-			"postBuildCommands-windows": ["cd /D $PACKAGE_DIR && helper\\build_docs $PACKAGE_DIR $DDOX_PACKAGE_DIR"]
+			"postBuildCommands-posix":   ["cd $PACKAGE_DIR && ../helper/build_docs $PACKAGE_DIR $DDOX_PACKAGE_DIR"],
+			"postBuildCommands-windows": ["cd /D $PACKAGE_DIR && ..\\helper\\build_docs $PACKAGE_DIR $DDOX_PACKAGE_DIR"]
 		}
 	]
 }
