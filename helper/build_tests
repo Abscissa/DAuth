@@ -9,5 +9,6 @@ cd $4
 dub build
 
 # Compile
+echo Compiling/Running instauser-$1 tests...
 cd $2
 $3bin/dub-data-mod describe --compiler=dmd --config=tests --data-0 --data=options --data=versions --data=import-paths | $4bin/safearg --post=src/instauser/$1/package.d rdmd -unittest -main --force

@@ -5,6 +5,7 @@ cd /D %3
 dub build
 
 rem Build docs
+echo Generating instauser-%1 docs...
 cd /D %2
 rdmd -Isrc --build-only --force -c -Dddocs_tmp -X -Xfdocs\docs.json -version=InstaUser_Docs src\instauser\%1\package.d
 rmdir /S /Q docs_tmp > NUL 2> NUL
