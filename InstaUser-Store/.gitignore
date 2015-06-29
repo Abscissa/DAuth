@@ -1,6 +1,7 @@
 .dub/
 bin/
 lib/
+deleteme/
 dub.selections.json
 docs/docs.json
 docs/public/index.html

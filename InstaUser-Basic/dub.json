@@ -40,6 +40,7 @@
 		{
 			"name": "docs",
 			"targetType": "library",
+			"targetPath": "deleteme",
 
 			"dependencies": {
 				"ddox": "~>0.10.8"
