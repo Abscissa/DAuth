@@ -11,9 +11,13 @@ import std.typecons;
 
 import instauser.basic.core;
 
-// Manually import this to work around RDMD linking issue in Vibe.d
+// Manually import these to work around RDMD linking issue in Vibe.d
+// (Probably this: https://issues.dlang.org/show_bug.cgi?id=7016 )
 version(Have_vibe_d)
+{
 	import vibe.internal.meta.traits;
+	import vibe.core.drivers.native;
+}
 
 version(InstaUserStore_Unittest)
 {
@@ -315,7 +319,7 @@ struct InstaUserStore(Store)
 		assert( this.validateUser ("Cho", dupPassword("pass123"  )) );
 		assert( !this.validateUser("Cho", dupPassword("test pass")) );
 		
-		assert( this.store.getHash("Joe").toString() != this.store.getHash("Cho").toString() );
+		assert( this.store.getHash("Joe").get().toString() != this.store.getHash("Cho").get().toString() );
 
 		assert( this.getUserCount() == 2 );
 		assertNotThrown( this.wipeEverythingAndInit() );

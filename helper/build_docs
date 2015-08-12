@@ -7,7 +7,7 @@ dub build
 # Build docs
 echo Generating instauser-$1 docs...
 cd $2
-rdmd -Isrc --build-only --force -c -Dddocs_tmp -X -Xfdocs/docs.json -version=InstaUser_Docs src/instauser/$1/package.d
+rdmd -I../InstaUser-Basic/src -I../InstaUser-Store/src -I../InstaUser-Web/src --build-only --force -c -Dddocs_tmp -X -Xfdocs/docs.json -version=InstaUser_Docs src/instauser/$1/package.d
 rm -rf docs_tmp
 rm -f src/instauser/$1/package
 $3/ddox filter docs/docs.json --min-protection=Protected

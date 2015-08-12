@@ -15,13 +15,12 @@
 			"targetPath": "lib",
 
 			"dependencies": {
-				"safearg": "~>0.9.7",
-				"dub-data-mod": "~>0.9.23-mod.1"
+				"safearg": "~>0.9.7"
 			},
 
 			"versions": ["InstaUserBasic_PrebuiltLib"],
-			"postBuildCommands-posix":   ["cd $PACKAGE_DIR && ../helper/build_lib basic $PACKAGE_DIR $DUB_DATA_MOD_PACKAGE_DIR $SAFEARG_PACKAGE_DIR"],
-			"postBuildCommands-windows": ["cd /D $PACKAGE_DIR && ..\\helper\\build_lib basic $PACKAGE_DIR $DUB_DATA_MOD_PACKAGE_DIR $SAFEARG_PACKAGE_DIR"]
+			"postBuildCommands-posix":   ["cd $PACKAGE_DIR && ../helper/build_lib basic $PACKAGE_DIR $SAFEARG_PACKAGE_DIR"],
+			"postBuildCommands-windows": ["cd /D $PACKAGE_DIR && ..\\helper\\build_lib basic $PACKAGE_DIR $SAFEARG_PACKAGE_DIR"]
 		},
 		{
 			"name": "tests",
@@ -29,13 +28,12 @@
 			"targetPath": "bin",
 
 			"dependencies": {
-				"safearg": "~>0.9.7",
-				"dub-data-mod": "~>0.9.23-mod.1"
+				"safearg": "~>0.9.7"
 			},
 
 			"versions": ["InstaUser_AllowWeakSecurity", "InstaUserBasic_Unittest"],
-			"postBuildCommands-posix":   ["cd $PACKAGE_DIR && ../helper/build_tests basic $PACKAGE_DIR $DUB_DATA_MOD_PACKAGE_DIR $SAFEARG_PACKAGE_DIR"],
-			"postBuildCommands-windows": ["cd /D $PACKAGE_DIR && ..\\helper\\build_tests basic $PACKAGE_DIR $DUB_DATA_MOD_PACKAGE_DIR $SAFEARG_PACKAGE_DIR"]
+			"postBuildCommands-posix":   ["cd $PACKAGE_DIR && ../helper/build_tests basic $PACKAGE_DIR $SAFEARG_PACKAGE_DIR"],
+			"postBuildCommands-windows": ["cd /D $PACKAGE_DIR && ..\\helper\\build_tests basic $PACKAGE_DIR $SAFEARG_PACKAGE_DIR"]
 		},
 		{
 			"name": "docs",

@@ -1,17 +1,13 @@
 #!/bin/sh
 
-# Ensure dub-data-mod is built
-cd $3
-dub build
-
 # Ensure safearg is built
-cd $4
+cd $3
 dub build
 
 # Compile
 echo Compiling instauser-$1 library...
 cd $2
-$3bin/dub-data-mod describe -q --compiler=dmd --config=library --data-0 --data=options --data=versions --data=import-paths | $4bin/safearg --post=src/instauser/$1/package.d rdmd --build-only -lib -od. -of$2lib/libinstauser-$1.a --force
+dub describe -q --compiler=dmd --config=library --data-0 --data=options --data=versions --data=import-paths | $3bin/safearg --post=src/instauser/$1/package.d rdmd --build-only -lib -od. -of$2lib/libinstauser-$1.a --force
 
 # Remove junk that got generated
 rm -f package.a

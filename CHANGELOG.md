@@ -5,11 +5,12 @@ InstaUser - ChangeLog
 
 v0.7.0 - TBD
 -------------------
-- **Major Change:** Project is now named "InstaUser". DAuth has now become "InstaUser-Basic", and two new optional pillars have been added: InstaUser-Store and InstaUser-Web.
+- **Major Change:** Project is now named "InstaUser". DAuth has now become "InstaUser-Basic", and two optional new components have been added: InstaUser-Store and InstaUser-Web.
+- **Change**: Perform all builds through [DUB](http://code.dlang.org/getting_started).
 
 v0.6.2 - 2015/03/25
 -------------------
-- **Fixed:** [#1](https://github.com/Abscissa/InstaUser/issues/1), [#2](https://github.com/Abscissa/InstaUser/issues/2): Compilation failure when using DUB and DMD 2.067 (@NCrashed)
+- **Fixed:** [#1](https://github.com/Abscissa/InstaUser/issues/1)/[#2](https://github.com/Abscissa/InstaUser/issues/2): Compilation failure when using DUB and DMD 2.067 (@NCrashed)
 
 v0.6.1 - 2014/08/30 - Docs and crypt(3) formatting
 -------------------
@@ -34,7 +35,7 @@ v0.6.0 - 2014/05/22 - SHA-2, Hash_DRBG and Separate Modules
 
 v0.5.1 - 2014/04/06
 -------------------
-- **Fixed:** [DUB](http://code.dlang.org/) package names must be all-lowercase.
+- **Fixed:** [DUB](http://code.dlang.org/getting_started) package names must be all-lowercase.
 
 v0.5.0 - 2014/04/06
 -------------------
