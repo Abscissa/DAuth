@@ -2,13 +2,60 @@
 	"name": "instauser-web",
 	"description": "Simple Web-based User Logins",
 	"authors": ["Nick Sabalausky"],
-	"homepage": "https://github.com/abscissa/InstaUser-Web",
+	"homepage": "https://github.com/abscissa/InstaUser",
 	"license": "zlib/libpng",
-	"sourcePaths": ["src"],
+	"targetType": "staticLibrary",
+	"targetName": "instauser-web",
+	"targetPath": "deleteme",
+	"sourcePaths": ["dummy"],
 	"importPaths": ["src"],
 	"dependencies": {
 		"instauser:instauser-basic": "*",
 		"instauser:instauser-store": "*",
-		"semitwistweb": "==0.0.1"
-	}
+		"semitwistweb": "==0.0.3"
+	},
+	"subConfigurations": {
+		"semitwistweb": "no-build"
+	},
+	
+	"preGenerateCommands":
+		["rdmd $SEMITWISTWEB_PACKAGE_DIR/scripts/copyResources.d $PACKAGE_DIR $SEMITWISTWEB_PACKAGE_DIR"],
+	
+	"configurations": [
+		{
+			"name": "library",
+			"targetType": "library",
+
+			"dependencies": {
+				"safearg": "~>0.9.7"
+			},
+
+			"postBuildCommands-posix":   ["cd $PACKAGE_DIR    && ../helper/build_lib   web $PACKAGE_DIR $SAFEARG_PACKAGE_DIR"],
+			"postBuildCommands-windows": ["cd /D $PACKAGE_DIR && ..\\helper\\build_lib web $PACKAGE_DIR $SAFEARG_PACKAGE_DIR"]
+		},
+		{
+			"name": "tests",
+			"targetType": "executable",
+
+			"dependencies": {
+				"safearg": "~>0.9.7"
+			},
+
+			"versions": ["InstaUser_AllowWeakSecurity", "InstaUserWeb_Unittest", "VibeCustomMain", "VibeLibeventDriver"],
+			"postBuildCommands-posix":   ["cd $PACKAGE_DIR    && ../helper/build_tests   web $PACKAGE_DIR $SAFEARG_PACKAGE_DIR"],
+			"postBuildCommands-windows": ["cd /D $PACKAGE_DIR && ..\\helper\\build_tests web $PACKAGE_DIR $SAFEARG_PACKAGE_DIR"]
+		},
+		{
+			"name": "docs",
+			"targetType": "library",
+
+			"dependencies": {
+				"ddox": "~>0.10.8"
+			},
+
+			"versions": ["InstaUser_Docs"],
+			"postBuildCommands-posix":   ["cd $PACKAGE_DIR    && ../helper/build_docs   web $PACKAGE_DIR $DDOX_PACKAGE_DIR"],
+			"postBuildCommands-windows": ["cd /D $PACKAGE_DIR && ..\\helper\\build_docs web $PACKAGE_DIR $DDOX_PACKAGE_DIR"]
+		}
+	]
 }

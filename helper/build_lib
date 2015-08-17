@@ -7,7 +7,7 @@ dub build
 # Compile
 echo Compiling instauser-$1 library...
 cd $2
-dub describe -q --compiler=dmd --config=library --data-0 --data=options --data=versions --data=import-paths | $3bin/safearg --post=src/instauser/$1/package.d rdmd --build-only -lib -od. -of$2lib/libinstauser-$1.a --force
+dub describe --nodeps -q --compiler=dmd --config=library --data-0 --data=options --data=versions --data=import-paths | $3bin/safearg --post=src/instauser/$1/package.d rdmd --build-only -lib -Ires -Jres -od. -of$2lib/libinstauser-$1.a --force
 
 # Remove junk that got generated
 rm -f package.a
