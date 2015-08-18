@@ -1,7 +1,7 @@
 name        "instauser-web"
 description "Simple Web-based User Logins"
 authors     "Nick Sabalausky"
-homepage    "https://github.com/abscissa/InstaUser"
+homepage    "https://github.com/Abscissa/InstaUser"
 license     "zlib/libpng"
 
 targetType  "staticLibrary"
