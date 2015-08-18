@@ -31,7 +31,6 @@
 			"name": "tests",
 			"targetType": "executable",
 			"targetPath": "bin",
-			"sourcePaths": ["dummy"],
 
 			"dependencies": {
 				"safearg": "~>0.9.7"

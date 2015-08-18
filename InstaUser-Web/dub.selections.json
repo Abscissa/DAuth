@@ -6,7 +6,7 @@
 		"safearg": "0.9.7",
 		"ddox": "0.10.9",
 		"memutils": "0.3.8",
-		"semitwistweb": "0.0.3",
+		"semitwistweb": "0.0.4",
 		"openssl": "1.1.4+1.0.1g",
 		"vibe-d": "0.7.23",
 		"mysql-native": "0.1.3",
