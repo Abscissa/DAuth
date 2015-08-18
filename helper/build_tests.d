@@ -26,6 +26,13 @@ int main(string[] args)
 	const ddoxDir        = args[4];
 	const rootPackageDir = args[5];
 	
+	// This script gets run as a postBuildCommand, so the InstaUser subpackage
+	// in question MIGHT NOT be the root project actually being built.
+	//
+	// So, don't run the tests unless this actually IS the root project.
+	if(packageDir != rootPackageDir)
+		return 0;
+	
 	// Save current working dir
 	immutable origWorkingDir = getcwd();
 	scope(exit) chdir(origWorkingDir);
