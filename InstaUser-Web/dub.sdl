@@ -1,0 +1,45 @@
+name        "instauser-web"
+description "Simple Web-based User Logins"
+authors     "Nick Sabalausky"
+homepage    "https://github.com/abscissa/InstaUser"
+license     "zlib/libpng"
+
+targetType  "staticLibrary"
+targetName  "instauser-web"
+targetPath  "deleteme"
+sourcePaths "dummy"
+importPaths "src"
+
+dependency "instauser:instauser-basic" version="*"
+dependency "instauser:instauser-store" version="*"
+
+dependency "safearg"      version="~>0.9.7"
+dependency "ddox"         version="~>0.10.9"
+dependency "semitwistweb" version="==0.0.4"
+
+subConfiguration "semitwistweb" "no-build"
+
+preGenerateCommands \
+	"rdmd $SEMITWISTWEB_PACKAGE_DIR/scripts/copyResources.d $PACKAGE_DIR $SEMITWISTWEB_PACKAGE_DIR"
+
+postBuildCommands "cd $PACKAGE_DIR    && ../helper/build   web $PACKAGE_DIR $SAFEARG_PACKAGE_DIR $DDOX_PACKAGE_DIR" platform="posix"
+postBuildCommands "cd /D $PACKAGE_DIR && ..\\helper\\build web $PACKAGE_DIR $SAFEARG_PACKAGE_DIR $DDOX_PACKAGE_DIR" platform="windows"
+
+configuration "library" {
+	targetType "library"
+	sourcePaths "dummy"
+}
+
+configuration "tests" {
+	targetType "executable"
+	sourcePaths "dummy"
+
+	versions "InstaUser_AllowWeakSecurity" "InstaUserWeb_Unittest" "VibeCustomMain" "VibeLibeventDriver"
+}
+
+configuration "docs" {
+	targetType "library"
+	targetPath "deleteme"
+
+	versions "InstaUser_Docs"
+}

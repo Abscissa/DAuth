@@ -1,0 +1,14 @@
+name        "instauser"
+description "Authentication utility for systems based on salted password hashes."
+authors     "Nick Sabalausky"
+homepage    "https://github.com/abscissa/DAuth"
+license     "zlib/libpng"
+targetType  "none"
+
+dependency "instauser:instauser-basic" version="*"
+dependency "instauser:instauser-store" version="*"
+dependency "instauser:instauser-web"   version="*"
+
+subPackage "./InstaUser-Basic/"
+subPackage "./InstaUser-Store/"
+subPackage "./InstaUser-Web/"

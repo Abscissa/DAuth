@@ -1,0 +1,38 @@
+name        "instauser-basic"
+description "Authentication utility for systems based on salted password hashes."
+authors     "Nick Sabalausky"
+homepage    "https://github.com/abscissa/InstaUser"
+license     "zlib/libpng"
+
+targetType  "staticLibrary"
+targetName  "instauser-basic"
+sourcePaths "dummy"
+importPaths "src"
+
+dependency "safearg" version="~>0.9.7"
+dependency "ddox"    version="~>0.10.9"
+
+postBuildCommands "cd $PACKAGE_DIR    && ../helper/build   basic $PACKAGE_DIR $SAFEARG_PACKAGE_DIR $DDOX_PACKAGE_DIR" platform="posix"
+postBuildCommands "cd /D $PACKAGE_DIR && ..\\helper\\build basic $PACKAGE_DIR $SAFEARG_PACKAGE_DIR $DDOX_PACKAGE_DIR" platform="windows"
+
+configuration "library" {
+	targetType "library"
+	targetPath "lib"
+
+	versions "InstaUserBasic_PrebuiltLib"
+}
+
+configuration "tests" {
+	targetType "executable"
+	targetPath "bin"
+	sourcePaths "dummy"
+
+	versions "InstaUser_AllowWeakSecurity" "InstaUserBasic_Unittest" "VibeCustomMain"
+}
+
+configuration "docs" {
+	targetType "library"
+	targetPath "deleteme"
+
+	versions "InstaUser_Docs"
+}
