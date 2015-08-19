@@ -2,13 +2,13 @@ import scriptlike;
 
 void main()
 {
-	const docsDir = thisExePath().dirName() ~ "../../docs";
+	const docsDir = thisExePath().dirName()~"../../docs";
 	//writeln("docsDir: ", docsDir);
 	chdir(docsDir);
-	tryRemove(Path("docs.json"));
-	tryRemove(Path("public/file_hashes.json"));
-	tryRemove(Path("public/index.html"));
-	tryRemove(Path("public/sitemap.xml"));
-	tryRemove(Path("public/symbols.js"));
-	tryRmdirRecurse(Path("public/instauser"));
+	tryRemove("docs.json");
+	tryRemove("public/file_hashes.json");
+	tryRemove("public/index.html");
+	tryRemove("public/sitemap.xml");
+	tryRemove("public/symbols.js");
+	tryRmdirRecurse("public/instauser");
 }

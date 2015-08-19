@@ -15,6 +15,6 @@
 		"gen-package-version": "1.0.3",
 		"libev": "5.0.0+4.04",
 		"instauser": "0.6.2+commit.35.g6b1a57c",
-		"scriptlike": "0.9.2"
+		"scriptlike": "0.9.3"
 	}
 }
