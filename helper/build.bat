@@ -1,2 +1,2 @@
 @echo off
-..\helper\build_%DUB_CONFIG% %*
+rdmd ..\helper\build.d %DUB_CONFIG% %*
