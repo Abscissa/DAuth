@@ -55,13 +55,13 @@ int main(string[] args)
 		return 1;
 	}
 	
-	// If test mode, only run tests for the requested subproject.
-	if(configName == configTests)
+	// If test/docs mode, only run this script for the requested subproject.
+	if(configName == configTests || configName == configDocs)
 	{
 		// This script gets run as a postBuildCommand, so the InstaUser subpackage
 		// in question MIGHT NOT be the root project actually being built.
 		//
-		// So, don't run the tests unless this actually IS the root project.
+		// So, don't run the tests or build docs unless this actually IS the root project.
 		if(packageDir != rootPackageDir)
 			return 0;
 	}
@@ -141,7 +141,7 @@ int main(string[] args)
 			"--data=versions,import-paths,string-import-paths";
 
 		const rdmdCmd =  // For some reason, '--exclude=mustache' has no effect. No idea why. So just exclude it in 'ddox filter' below.
-			"rdmd --chatty --build-only --force -c -Dddocs_tmp -X -Xfdocs/docs.json "~
+			"rdmd --build-only --force -c -Dddocs_tmp -X -Xfdocs/docs.json "~
 			"--exclude=vibe --exclude=deimos --exclude=mysql --exclude=arsd "~
 			"--exclude=mustache --exclude=semitwist --exclude=semitwistWeb";
 
