@@ -46,6 +46,7 @@ int main(string[] args)
 	const safeArgDir     = args[4];
 	const ddoxDir        = args[5];
 	const rootPackageDir = args[6];
+	const safeArgTool = escapeShellFileName( buildNormalizedPath(safeArgDir, "bin/safearg") );
 	
 	// Validate configName
 	if(!canFind(allConfigs, configName))
@@ -81,8 +82,6 @@ int main(string[] args)
 		else version(Windows) const libName = "instauser-"~subProjectName~".lib";
 		else static assert(0);
 
-		const safeArgTool = escapeShellFileName( buildNormalizedPath(safeArgDir, "bin/safearg") );
-
 		const dubDescribeDataCmd =
 			"dub describe --nodeps --compiler=dmd --config=library --data-0 "~
 			"--data=options,versions,import-paths";
@@ -112,8 +111,6 @@ int main(string[] args)
 		else version(Windows) enum extraArgs = "";
 		else static assert(0);
 
-		const safeArgTool = escapeShellFileName( buildNormalizedPath(safeArgDir, "bin/safearg") );
-
 		const dubDescribeDataCmd =
 			"dub describe --nodeps --compiler=dmd --config=tests --data-0 "~
 			"--data=options,versions,import-paths,linker-files";
@@ -139,15 +136,22 @@ int main(string[] args)
 		spawnShell("dub build").wait();
 
 		// Generate commands
-		const rdmdCmd =
-			"rdmd -I../InstaUser-Basic/src -I../InstaUser-Store/src -I../InstaUser-Web/src "~
-			"-Ires -Jres --build-only --force -c -Dddocs_tmp -X -Xfdocs/docs.json "~
-			"-version=InstaUser_Docs src/instauser/"~subProjectName~"/package.d";
+		const dubDescribeDataCmd =
+			"dub describe --nodeps --compiler=dmd --config=tests --data-0 "~
+			"--data=versions,import-paths,string-import-paths";
+
+		const rdmdCmd =  // For some reason, '--exclude=mustache' has no effect. No idea why. So just exclude it in 'ddox filter' below.
+			"rdmd --chatty --build-only --force -c -Dddocs_tmp -X -Xfdocs/docs.json "~
+			"--exclude=vibe --exclude=deimos --exclude=mysql --exclude=arsd "~
+			"--exclude=mustache --exclude=semitwist --exclude=semitwistWeb";
+
+		const safeArgToRdmdCmd =
+			safeArgTool~" --post=src/instauser/"~subProjectName~"/package.d "~rdmdCmd;
 
 		// Generate doc information
 		writeln("Generating instauser-", subProjectName, " docs...");
 		chdir(packageDir);
-		spawnShell(rdmdCmd).wait();
+		spawnShell(dubDescribeDataCmd~" | "~safeArgToRdmdCmd).wait();
 		
 		// Delete junk
 		rmdirRecurse("docs_tmp");
@@ -156,7 +160,7 @@ int main(string[] args)
 		else static assert(0);
 		
 		// Pass though DDOX to generate docs
-		spawnShell(ddoxDir~dirSeparator~"ddox filter docs/docs.json --min-protection=Protected").wait();
+		spawnShell(ddoxDir~dirSeparator~"ddox filter docs/docs.json --min-protection=Protected --ex=mustache").wait();
 		spawnShell(ddoxDir~dirSeparator~"ddox generate-html docs/docs.json docs/public --navigation-type=ModuleTree").wait();
 	}
 	
