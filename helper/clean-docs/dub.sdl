@@ -1,0 +1,6 @@
+name "instauser-helper-clean-docs"
+dependency "scriptlike" version="~>0.9.2"
+targetType "executable"
+targetPath "."
+targetName "clean-docs"
+sourceFiles "main.d"
