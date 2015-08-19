@@ -3,9 +3,3 @@ bin/
 lib/
 deleteme/
 dub.selections.json
-docs/docs.json
-docs/public/index.html
-docs/public/sitemap.xml
-docs/public/symbols.js
-docs/public/file_hashes.json
-docs/public/instauser/

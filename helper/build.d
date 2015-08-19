@@ -25,6 +25,11 @@ enum configTests   = "tests";
 enum configDocs    = "docs";
 immutable allConfigs = [configLibrary, configTests, configDocs];
 
+enum subProjectBasic = "basic";
+enum subProjectStore = "store";
+enum subProjectWeb   = "web";
+immutable allSubProjects = [subProjectBasic, subProjectStore, subProjectWeb];
+
 int main(string[] args)
 {
 	// Check args
@@ -55,6 +60,13 @@ int main(string[] args)
 		return 1;
 	}
 	
+	// Validate subProjectName
+	if(!canFind(allSubProjects, subProjectName))
+	{
+		stderr.writeln("Invalid subproject '", subProjectName, "'. Expected one of these: ", allSubProjects);
+		return 1;
+	}
+	
 	// If test/docs mode, only run this script for the requested subproject.
 	if(configName == configTests || configName == configDocs)
 	{
@@ -66,6 +78,18 @@ int main(string[] args)
 			return 0;
 	}
 	
+	// Only build docs for InstaUser-Web, because that will
+	// automatically include the docs for the rest of InstaUser.
+	if(configName == configDocs && subProjectName != subProjectWeb)
+	{
+		writeln("Not building docs for instauser-", subProjectName, ".");
+		writeln(
+			"Please build the docs for instauser-web instead, ",
+			"that will automatically include the docs for all of InstaUser."
+		);
+		return 0;
+	}
+
 	// Save current working dir
 	immutable origWorkingDir = getcwd();
 	scope(exit) chdir(origWorkingDir);
@@ -141,7 +165,7 @@ int main(string[] args)
 			"--data=versions,import-paths,string-import-paths";
 
 		const rdmdCmd =  // For some reason, '--exclude=mustache' has no effect. No idea why. So just exclude it in 'ddox filter' below.
-			"rdmd --build-only --force -c -Dddocs_tmp -X -Xfdocs/docs.json "~
+			"rdmd --build-only --force -c -Dddocs_tmp -X -Xf../docs/docs.json "~
 			"--exclude=vibe --exclude=deimos --exclude=mysql --exclude=arsd "~
 			"--exclude=mustache --exclude=semitwist --exclude=semitwistWeb";
 
@@ -149,7 +173,8 @@ int main(string[] args)
 			safeArgTool~" --post=src/instauser/"~subProjectName~"/package.d "~rdmdCmd;
 
 		// Generate doc information
-		writeln("Generating instauser-", subProjectName, " docs...");
+		writeln("Generating InstaUser docs...");
+		//writeln("Generating instauser-", subProjectName, " docs...");
 		chdir(packageDir);
 		spawnShell(dubDescribeDataCmd~" | "~safeArgToRdmdCmd).wait();
 		
@@ -160,8 +185,12 @@ int main(string[] args)
 		else static assert(0);
 		
 		// Pass though DDOX to generate docs
-		spawnShell(ddoxDir~dirSeparator~"ddox filter docs/docs.json --min-protection=Protected --ex=mustache").wait();
-		spawnShell(ddoxDir~dirSeparator~"ddox generate-html docs/docs.json docs/public --navigation-type=ModuleTree").wait();
+		spawnShell(ddoxDir~dirSeparator~"ddox filter ../docs/docs.json --min-protection=Protected --ex=mustache").wait();
+		spawnShell(ddoxDir~dirSeparator~"ddox generate-html ../docs/docs.json ../docs/public --navigation-type=ModuleTree").wait();
+
+		// Done
+		writeln("To view InstaUser docs, open this file in your web browser:");
+		writeln(buildNormalizedPath(absolutePath("../docs/public/index.html")));
 	}
 	
 	return 0;
