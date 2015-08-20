@@ -12,13 +12,7 @@ And piping the result through safeArg[1] into rdmd.
 [1]safeArg: https://github.com/Abscissa/safeArg
 +/
 
-import std.algorithm;
-import std.exception;
-import std.file;
-import std.path;
-import std.process;
-import std.range;
-import std.stdio;
+import scriptlike;
 
 enum configLibrary = "library";
 enum configTests   = "tests";

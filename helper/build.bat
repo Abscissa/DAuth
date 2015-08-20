@@ -1,2 +1,2 @@
 @echo off
-rdmd ..\helper\build.d %DUB_CONFIG% %*
+cd ..\helper\build-config && dub run -q -- %DUB_CONFIG% %*

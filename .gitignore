@@ -6,6 +6,10 @@ docs/public/symbols.js
 docs/public/file_hashes.json
 docs/public/instauser/
 
+helper/build-config/.dub/
+helper/build-config/build-config
+helper/build-config/dub.selections.json
+
 helper/clean-docs/.dub/
 helper/clean-docs/clean-docs
 helper/clean-docs/dub.selections.json
