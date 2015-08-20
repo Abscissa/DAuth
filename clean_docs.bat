@@ -1,2 +1,2 @@
 @echo off
-dub run instauser:instauser-helper-clean-docs
+cd helper\clean-docs && dub run
