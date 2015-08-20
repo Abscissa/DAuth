@@ -16,8 +16,9 @@ dependency "ddox"         version="~>0.10.9"
 dependency "mysql-native" version="==0.1.3"  optional=false
 dependency "vibe-d"       version="==0.7.23" optional=false
 
-postBuildCommands "cd $PACKAGE_DIR    && ../helper/build   store $PACKAGE_DIR $SAFEARG_PACKAGE_DIR $DDOX_PACKAGE_DIR $ROOT_PACKAGE_DIR" platform="posix"
-postBuildCommands "cd /D $PACKAGE_DIR && ..\\helper\\build store $PACKAGE_DIR $SAFEARG_PACKAGE_DIR $DDOX_PACKAGE_DIR $ROOT_PACKAGE_DIR" platform="windows"
+// Perform the actual build (for any configuration)
+postBuildCommands "cd $PACKAGE_DIR    && cd ../helper/build-config   && dub run -q -- $$DUB_CONFIG store $PACKAGE_DIR $SAFEARG_PACKAGE_DIR $DDOX_PACKAGE_DIR $ROOT_PACKAGE_DIR" platform="posix"
+postBuildCommands "cd /D $PACKAGE_DIR && cd ..\\helper\\build-config && dub run -q -- %DUB_CONFIG% store $PACKAGE_DIR $SAFEARG_PACKAGE_DIR $DDOX_PACKAGE_DIR $ROOT_PACKAGE_DIR" platform="windows"
 
 configuration "library" {
 	targetType "library"

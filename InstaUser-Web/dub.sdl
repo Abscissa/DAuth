@@ -22,8 +22,9 @@ subConfiguration "semitwistweb" "no-build"
 preGenerateCommands \
 	"rdmd $SEMITWISTWEB_PACKAGE_DIR/scripts/copyResources.d $PACKAGE_DIR $SEMITWISTWEB_PACKAGE_DIR"
 
-postBuildCommands "cd $PACKAGE_DIR    && ../helper/build   web $PACKAGE_DIR $SAFEARG_PACKAGE_DIR $DDOX_PACKAGE_DIR $ROOT_PACKAGE_DIR" platform="posix"
-postBuildCommands "cd /D $PACKAGE_DIR && ..\\helper\\build web $PACKAGE_DIR $SAFEARG_PACKAGE_DIR $DDOX_PACKAGE_DIR $ROOT_PACKAGE_DIR" platform="windows"
+// Perform the actual build (for any configuration)
+postBuildCommands "cd $PACKAGE_DIR    && cd ../helper/build-config   && dub run -q -- $$DUB_CONFIG web $PACKAGE_DIR $SAFEARG_PACKAGE_DIR $DDOX_PACKAGE_DIR $ROOT_PACKAGE_DIR" platform="posix"
+postBuildCommands "cd /D $PACKAGE_DIR && cd ..\\helper\\build-config && dub run -q -- %DUB_CONFIG% web $PACKAGE_DIR $SAFEARG_PACKAGE_DIR $DDOX_PACKAGE_DIR $ROOT_PACKAGE_DIR" platform="windows"
 
 configuration "library" {
 	targetType "library"
