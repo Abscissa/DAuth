@@ -24,42 +24,38 @@ enum subProjectStore = "store";
 enum subProjectWeb   = "web";
 immutable allSubProjects = [subProjectBasic, subProjectStore, subProjectWeb];
 
-int main(string[] args)
+void main(string[] args)
 {
 	// Check args
 	if(args.length != 7)
 	{
-		stderr.writeln(
+		fail(
 			"Wrong number args\n",
 			"Usage:",
-			" rdmd ../helper/build.d $DUB_CONFIG (basic|store|web) $PACKAGE_DIR",
+			" dub run -- $DUB_CONFIG (basic|store|web) $PACKAGE_DIR",
 			" $SAFEARG_PACKAGE_DIR $DDOX_PACKAGE_DIR $ROOT_PACKAGE_DIR"
 		);
-		return 1;
 	}
 	
 	// Get args
 	const configName     = args[1];
 	const subProjectName = args[2];
-	const packageDir     = args[3];
-	const safeArgDir     = args[4];
-	const ddoxDir        = args[5];
-	const rootPackageDir = args[6];
-	const safeArgTool = escapeShellFileName( buildNormalizedPath(safeArgDir, "bin/safearg") );
+	auto  packageDir     = Path(args[3]);
+	auto  safeArgDir     = Path(args[4]);
+	auto  ddoxDir        = Path(args[5]);
+	auto  rootPackageDir = Path(args[6]);
+	auto  safeArgTool = safeArgDir ~ "bin/safearg";
+
+	// Set working dir to correct subproject
+	chdir(packageDir);
 	
 	// Validate configName
 	if(!canFind(allConfigs, configName))
-	{
-		stderr.writeln("Invalid config '", configName, "'. Expected one of these: ", allConfigs);
-		return 1;
-	}
+		fail("Invalid config '", configName, "'. Expected one of these: ", allConfigs);
 	
 	// Validate subProjectName
 	if(!canFind(allSubProjects, subProjectName))
-	{
-		stderr.writeln("Invalid subproject '", subProjectName, "'. Expected one of these: ", allSubProjects);
-		return 1;
-	}
+		fail("Invalid subproject '", subProjectName, "'. Expected one of these: ", allSubProjects);
 	
 	// If test/docs mode, only run this script for the requested subproject.
 	if(configName == configTests || configName == configDocs)
@@ -69,7 +65,7 @@ int main(string[] args)
 		//
 		// So, don't run the tests or build docs unless this actually IS the root project.
 		if(packageDir != rootPackageDir)
-			return 0;
+			return;
 	}
 	
 	// Only build docs for InstaUser-Web, because that will
@@ -81,16 +77,11 @@ int main(string[] args)
 			"Please build the docs for instauser-web instead, ",
 			"that will automatically include the docs for all of InstaUser."
 		);
-		return 0;
+		return;
 	}
-
-	// Save current working dir
-	immutable origWorkingDir = getcwd();
-	scope(exit) chdir(origWorkingDir);
 	
 	// Ensure safearg is built
-	chdir(safeArgDir);
-	spawnShell("dub build").wait();
+	run(safeArgDir, "dub build");
 
 	// Build config: library
 	if(configName == configLibrary)
@@ -100,20 +91,21 @@ int main(string[] args)
 		else version(Windows) const libName = "instauser-"~subProjectName~".lib";
 		else static assert(0);
 
+		const libPath = packageDir ~ "lib" ~ libName;
+
 		const dubDescribeDataCmd =
 			"dub describe --nodeps --compiler=dmd --config=library --data-0 "~
 			"--data=options,versions,import-paths";
 
 		const rdmdCmd =
-			"rdmd --build-only -lib -Ires -Jres -od. -of"~packageDir~"lib/"~libName~" --force";
+			"rdmd --build-only -lib -Ires -Jres -od. -of"~libPath.toRawString()~" --force";
 
 		const safeArgToRdmdCmd =
-			safeArgTool~" --post=src/instauser/"~subProjectName~"/package.d "~rdmdCmd;
+			safeArgTool.toString()~" --post=src/instauser/"~subProjectName~"/package.d "~rdmdCmd;
 		
 		// Compile/Run tests
 		writeln("Compiling instauser-", subProjectName, " library...");
-		chdir(packageDir);
-		spawnShell(dubDescribeDataCmd~" | "~safeArgToRdmdCmd).wait();
+		run(packageDir, dubDescribeDataCmd~" | "~safeArgToRdmdCmd);
 
 		// Delete junk
 		version(Posix)        std.file.remove("package.a");
@@ -138,20 +130,18 @@ int main(string[] args)
 			"-debug -g -unittest -main --force"~extraArgs;
 
 		const safeArgToRdmdCmd =
-			safeArgTool~" --post=src/instauser/"~subProjectName~"/package.d "~rdmdCmd;
+			safeArgTool.toString()~" --post=src/instauser/"~subProjectName~"/package.d "~rdmdCmd;
 		
 		// Compile/Run tests
 		writeln("Compiling/Running instauser-", subProjectName, " tests...");
-		chdir(packageDir);
-		spawnShell(dubDescribeDataCmd~" | "~safeArgToRdmdCmd).wait();
+		run(packageDir, dubDescribeDataCmd~" | "~safeArgToRdmdCmd);
 	}
 
 	// Build config: docs
 	else if(configName == configDocs)
 	{
 		// Ensure ddox is built
-		chdir(ddoxDir);
-		spawnShell("dub build").wait();
+		run(ddoxDir, "dub build");
 
 		// Generate commands
 		const dubDescribeDataCmd =
@@ -164,13 +154,12 @@ int main(string[] args)
 			"--exclude=mustache --exclude=semitwist --exclude=semitwistWeb";
 
 		const safeArgToRdmdCmd =
-			safeArgTool~" --post=src/instauser/"~subProjectName~"/package.d "~rdmdCmd;
+			safeArgTool.toString()~" --post=src/instauser/"~subProjectName~"/package.d "~rdmdCmd;
 
 		// Generate doc information
 		writeln("Generating InstaUser docs...");
 		//writeln("Generating instauser-", subProjectName, " docs...");
-		chdir(packageDir);
-		spawnShell(dubDescribeDataCmd~" | "~safeArgToRdmdCmd).wait();
+		run(packageDir, dubDescribeDataCmd~" | "~safeArgToRdmdCmd);
 		
 		// Delete junk
 		rmdirRecurse("docs_tmp");
@@ -179,13 +168,12 @@ int main(string[] args)
 		else static assert(0);
 		
 		// Pass though DDOX to generate docs
-		spawnShell(ddoxDir~dirSeparator~"ddox filter ../docs/docs.json --min-protection=Protected --ex=mustache").wait();
-		spawnShell(ddoxDir~dirSeparator~"ddox generate-html ../docs/docs.json ../docs/public --navigation-type=ModuleTree").wait();
+		auto ddoxTool = ddoxDir ~ "ddox";
+		run(packageDir, ddoxTool.toString()~" filter ../docs/docs.json --min-protection=Protected --ex=mustache");
+		run(packageDir, ddoxTool.toString()~" generate-html ../docs/docs.json ../docs/public --navigation-type=ModuleTree");
 
 		// Done
 		writeln("To view InstaUser docs, open this file in your web browser:");
 		writeln(buildNormalizedPath(absolutePath("../docs/public/index.html")));
 	}
-	
-	return 0;
 }
