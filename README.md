@@ -3,7 +3,9 @@ DAuth - Salted Hashed Password Library for D
 
 [[ChangeLog](https://github.com/Abscissa/DAuth/blob/master/CHANGELOG.md)] [[API Reference](http://semitwist.com/dauth/)]
 
-DAuth (soon to be rebranded as "InstaUser Basic") is an [open-source](https://github.com/Abscissa/DAuth/blob/master/LICENSE.txt) [salted password hash](http://en.wikipedia.org/wiki/Salt_%28cryptography%29) authentication library for [D](http://dlang.org). It provides a simple, yet flexible API. With it, your software can easily incorporate user accounts with reliable, upgradable security.
+NOTE: DAuth will soon become rebranded as "InstaUser Basic", the core of a multi-component project, InstaUser. A preview of the current state of InstaUser is [available here on GitHub](https://github.com/Abscissa/InstaUser-preview).
+
+DAuth is an [open-source](https://github.com/Abscissa/DAuth/blob/master/LICENSE.txt) [salted password hash](http://en.wikipedia.org/wiki/Salt_%28cryptography%29) authentication library for [D](http://dlang.org). It provides a simple, yet flexible API. With it, your software can easily incorporate user accounts with reliable, upgradable security.
 
 You can have as much or as little control as you need. This makes DAuth suitable for both new projects and interfacing with any existing hashed-password store.
 
