@@ -3,6 +3,10 @@ DAuth - ChangeLog
 
 (Dates below are YYYY/MM/DD)
 
+v0.6.3 - 2017/01/31
+-------------------
+- **Fixed:** [#4](https://github.com/Abscissa/DAuth/issues/4): Randomness returns same value in separate executions.
+
 v0.6.2 - 2015/03/25
 -------------------
 - **Fixed:** [#1](https://github.com/Abscissa/DAuth/issues/1), [#2](https://github.com/Abscissa/DAuth/issues/2): Compilation failure when using DUB and DMD 2.067 (@NCrashed)
