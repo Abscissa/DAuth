@@ -466,6 +466,8 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 		Flag!"PredictionResistance" overridePredictionResistance,
 		ubyte[] overrideExtraInput)
 	{
+		init();
+
 		if(numGenerated >= maxGenerated || overridePredictionResistance == Yes.PredictionResistance)
 			reseed(overrideExtraInput);
 		
