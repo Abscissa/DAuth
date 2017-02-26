@@ -143,25 +143,6 @@ DAuth isn't intended to directly provide any encryption, hashing, or random numb
 
 At the moment however, DAuth does provide implementations of [SHA-2](http://en.wikipedia.org/wiki/Sha2) and [Hash_DRBG](http://csrc.nist.gov/publications/nistpubs/800-90A/SP800-90A.pdf) because (as of DMD 2.066.0) Phobos lacks a [cryptographically secure psuedorandom number generator](http://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator) and didn't gain SHA-2 until recently (v2.066.0). DAuth's intention is to migrate Hash_DRBG over to Phobos and eventually eliminate both that and SHA-2 from DAuth itself.
 
-Notes About DAuth's Priorities
-------------------------------
-DAuth's default settings and behaviors are specifically chosen with this order of priorities in mind:
-
-1. Flexibility (Top Priority)
-2. Overall Security
-3. Reliability/Correctness of User Code
-4. Cryptographic Security
-5. Convenience
-6. Efficiency (Lower Priority, but still important)
-
-It may seem strange that "Flexibility" is \#1, even ahead of security, but that's necessary to ensure this library can be used in all potential use-cases (for example, to interface with a legacy system that uses a known-insecure crypto). After all, if this can't be used, it can't provide any security at all.
-
-DAuth does take steps to encourage good security practices, and to help developers achieve it, but ultimately the library's user is responsible for their own security-related choices.
-
-Similarly, it may be surprising that "Cryptographic Security" is ranked below "Reliability/Correctness". However, bugs can often be an even greater threat to overall security than cryptographic weaknesses - and in unpredictable ways.
-
-Convenience is ranked slightly above efficiency because it directly encourages this library's actual usage, and thereby encourages security. Improved efficiency, when needed, can always be tweaked as necessary.
-
 See also
 --------
 For a good background on authentication, see ["Salted Password Hashing - Doing it Right"](https://crackstation.net/hashing-security.htm)
