@@ -7,9 +7,6 @@ license     "zlib/libpng"
 targetName  "instauser-basic"
 sourcePaths "src"
 
-dependency "safearg" version="~>0.9.7"
-dependency "ddox"    version="~>0.10.9"
-
 configuration "library" {
 	targetType "library"
 	targetPath "lib"

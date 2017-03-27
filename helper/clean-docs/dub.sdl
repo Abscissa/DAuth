@@ -1,5 +1,5 @@
 name "instauser-helper-clean-docs"
-dependency "scriptlike" version="~>0.9.3"
+dependency "scriptlike" version="~>0.10.2"
 targetType "executable"
 targetPath "."
 targetName "clean-docs"
