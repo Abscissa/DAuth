@@ -6,13 +6,8 @@ license     "zlib/libpng"
 targetType  "none"
 
 dependency "instauser:instauser-basic" version="*"
-dependency "instauser:instauser-store" version="*"
-dependency "instauser:instauser-web"   version="*"
 dependency "instauser:instauser-helper-build-config" version="*"
 dependency "instauser:instauser-helper-clean-docs"   version="*"
 
 subPackage "./InstaUser-Basic/"
-subPackage "./InstaUser-Store/"
-subPackage "./InstaUser-Web/"
-subPackage "./helper/build-config/"
 subPackage "./helper/clean-docs/"

@@ -1,6 +1,0 @@
-name "instauser-helper-build-config"
-dependency "scriptlike" version="~>0.9.3"
-targetType "executable"
-targetPath "."
-targetName "build-config"
-sourceFiles "main.d"

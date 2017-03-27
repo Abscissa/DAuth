@@ -1,2 +1,0 @@
-#!/bin/sh
-dub build --force --config=tests

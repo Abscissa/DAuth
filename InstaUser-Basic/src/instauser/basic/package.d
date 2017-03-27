@@ -80,3 +80,6 @@ unittest
 	assert(result2.output != result3.output);
 	assert(result3.output != result1.output);
 }
+
+version(InstaUserBasic_Unittest)
+	void main() {}

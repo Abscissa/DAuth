@@ -1,5 +1,5 @@
 import std.stdio;
-import dauth;
+import instauser.basic;
 
 void main()
 {
