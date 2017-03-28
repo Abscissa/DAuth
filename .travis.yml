@@ -1,0 +1,29 @@
+language: d
+sudo: false
+
+script:
+    - cd InstaUser-Basic
+    - dub test
+
+matrix:
+    include:
+        - d: dmd
+        - d: dmd-2.073.1
+        - d: dmd-2.073.0
+        - d: dmd-2.072.2
+        - d: dmd-2.071.2
+        - d: dmd-2.070.2
+        - d: dmd-2.069.2
+        - d: dmd-2.068.1
+        - d: dmd-2.068.0
+        - d: ldc
+        - d: ldc-1.1.0
+        - d: ldc-1.0.0
+        - d: ldc-0.17.1
+        - d: ldc-0.16.1
+        - d: ldc-0.15.1
+        - d: gdc
+        - d: gdc-5.2.0
+        - d: gdc-4.9.3
+        - d: gdc-4.9.2
+        - d: gdc-4.8.5
