@@ -20,11 +20,6 @@ import instauser.basic.strength;
 import instauser.basic.tests;
 import instauser.basic.util;
 
-// TemplateArgsOf only exists in Phobos of DMD 2.066 and up
-private struct dummy(T) {}
-static if(!is(std.traits.TemplateArgsOf!(dummy!int)))
-	private alias TemplateArgsOf = InstaUser_TemplateArgsOf;
-
 version(Windows)
 {
 	import std.c.windows.windows;
