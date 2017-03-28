@@ -3,8 +3,6 @@ InstaUser-Basic - Salted Hashed Password Library for D
 
 Writen in the D programming language.
 
-Tested with DMD 2.064.2 through DMD 2.067.0
-
 Homepage:
 $(LINK https://github.com/abscissa/InstaUser)
 
@@ -24,7 +22,6 @@ DMD flags to enable InstaUser-Basic unittests, but silence all non-error output:
 Import all:
 ------------
 import instauser.basic;
-import instauser.basic.hashdrbg;
 ------------
 
 Copyright: © 2014-2015 Nick Sabalausky
@@ -36,14 +33,8 @@ Authors: Nick Sabalausky
 module instauser.basic;
 
 public import instauser.basic.core;
+public import instauser.basic.hashdrbg;
 public import instauser.basic.random;
-
-version(InstaUser_Docs)             version = includeEverything;
-version(InstaUserBasic_PrebuiltLib) version = includeEverything;
-version(InstaUserBasic_Unittest)    version = includeEverything;
-
-version(includeEverything)
-	import instauser.basic.hashdrbg;
 
 version(InstaUserBasic_Unittest)
 unittest
