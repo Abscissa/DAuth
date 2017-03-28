@@ -137,8 +137,8 @@ or digest it does not know about. This is only supplied as a convenience. It
 is always your own responsibility to select an appropriate algorithm for your
 own needs.
 
-And yes, unfortunately, this does currently rule out all RNG's and digests
-currently in Phobos (as of v2.065). They are all known to be fairly weak
+And yes, unfortunately, this does currently rule out all RNG's and most
+digests currently in Phobos. They are all known to be fairly weak
 for password-hashing purposes, even SHA1 which despite being heavily used
 has known security flaws.
 
@@ -163,21 +163,9 @@ bool isKnownWeak(T)() if(isDigest!T || isSomeRandom!T)
 		is(T == MD5) ||
 		is(T == RIPEMD160) ||
 		is(T == SHA1) ||
-		
-		// Requires to-be-released DMD 2.066:
-		//__traits(isSame, TemplateOf!T, LinearCongruentialEngine) ||
-		//__traits(isSame, TemplateOf!T, MersenneTwisterEngine) ||
-		//__traits(isSame, TemplateOf!T, XorshiftEngine);
-		is(T == MinstdRand0) ||
-		is(T == MinstdRand) ||
-		is(T == Mt19937) ||
-		is(T == Xorshift32) ||
-		is(T == Xorshift64) ||
-		is(T == Xorshift96) ||
-		is(T == Xorshift128) ||
-		is(T == Xorshift160) ||
-		is(T == Xorshift192) ||
-		is(T == Xorshift);
+		isInstanceOf!(LinearCongruentialEngine, T) ||
+		isInstanceOf!(MersenneTwisterEngine, T) ||
+		isInstanceOf!(XorshiftEngine, T);
 }
 
 ///ditto
@@ -188,6 +176,18 @@ bool isKnownWeak(T)(T digest) if(is(T : Digest))
 		cast(MD5Digest)digest ||
 		cast(RIPEMD160Digest)digest ||
 		cast(SHA1Digest)digest;
+}
+
+version(InstaUserBasic_Unittest)
+unittest
+{
+	assert(isKnownWeak!MinstdRand0);
+	assert(isKnownWeak!Mt19937);
+	assert(isKnownWeak!Xorshift128);
+	assert(isKnownWeak!(LinearCongruentialEngine!(ulong, 16807u, 0u, 2147483647u)));
+	assert(isKnownWeak!MD5);
+	assert(!isKnownWeak!(HashDRBG!uint));
+	assert(!isKnownWeak!(HashDRBGStream!()));
 }
 
 private void validateStrength(T)() if(isDigest!T || isSomeRandom!T)
@@ -1062,3 +1062,5 @@ bool lengthConstantEquals(ubyte[] a, ubyte[] b)
 
 	return diff == 0;
 }
+
+enum isSomeRandom(T) = instauser.basic.core.isRandomStream!T || std.random.isUniformRNG!T;
