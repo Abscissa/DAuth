@@ -59,7 +59,7 @@ do thwart the parallelized brute force attacks that algorithms used for
 streaming data encryption, such as SHA, are increasingly susceptible to.
     $(LINK https://crackstation.net/hashing-security.htm)
 +/
-bool isKnownWeak(T)() if(isDigest!T || isSomeRandom!T)
+bool isKnownWeak(T)() if(isDigest!T || isInstaUserRandom!T)
 {
 	return
 		is(T == CRC32) ||
@@ -87,13 +87,12 @@ unittest
 	assert(isKnownWeak!MinstdRand0);
 	assert(isKnownWeak!Mt19937);
 	assert(isKnownWeak!Xorshift128);
-	assert(isKnownWeak!(LinearCongruentialEngine!(ulong, 16807u, 0u, 2147483647u)));
 	assert(isKnownWeak!MD5);
 	assert(!isKnownWeak!(HashDRBG!uint));
 	assert(!isKnownWeak!(HashDRBGStream!()));
 }
 
-void validateStrength(T)() if(isDigest!T || isSomeRandom!T)
+void validateStrength(T)() if(isDigest!T || isInstaUserRandom!T)
 {
 	version(DisallowWeakSecurity)
 	{

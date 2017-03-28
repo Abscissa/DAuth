@@ -61,8 +61,6 @@ enum isInstaUserRandom(T) =
 	(isUniformRNG!T && is(ElementType!T == uint));
 alias isDAuthRandom = isInstaUserRandom; /// Temporary backwards-compatibility alias
 
-enum isSomeRandom(T) = instauser.basic.random.isRandomStream!T || std.random.isUniformRNG!T;
-
 /++
 Generates a random password.
 
