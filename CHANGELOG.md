@@ -9,6 +9,11 @@ v0.7.0 - TBD
 once DAuth has now become the first component of InstaUser: "InstaUser-Basic".
 - **Change**: Perform all builds through [DUB](http://code.dlang.org/getting_started).
 
+v0.6.3 - 2017/01/31
+-------------------
+- **Fixed:** [#4](https://github.com/Abscissa/DAuth/issues/4):
+Randomness returns same value in separate executions.
+
 v0.6.2 - 2015/03/25
 -------------------
 - **Fixed:**
