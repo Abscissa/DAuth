@@ -1062,19 +1062,3 @@ bool lengthConstantEquals(ubyte[] a, ubyte[] b)
 
 	return diff == 0;
 }
-
-// Borrowed from Phobos (TemplateArgsOf only exists in DMD 2.066 and up).
-package template InstaUser_TemplateArgsOf(alias T : Base!Args, alias Base, Args...)
-{
-	alias InstaUser_TemplateArgsOf = Args;
-}
-package template InstaUser_TemplateArgsOf(T : Base!Args, alias Base, Args...)
-{
-	alias InstaUser_TemplateArgsOf = Args;
-}
-static assert(is( InstaUser_TemplateArgsOf!( Hash!SHA1   )[0] == SHA1   ));
-static assert(is( InstaUser_TemplateArgsOf!( Hash!Digest )[0] == Digest ));
-
-private struct dummy(T) {}
-static if(!is(std.traits.TemplateArgsOf!(dummy!int)))
-	private alias TemplateArgsOf = InstaUser_TemplateArgsOf;
