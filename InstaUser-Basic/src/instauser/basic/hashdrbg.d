@@ -6,6 +6,7 @@ Hash_DRBG Cryptographic Random Number Generator
 module instauser.basic.hashdrbg;
 
 import std.conv;
+import std.digest.sha;
 import std.exception;
 import std.random;
 import std.range;
@@ -15,13 +16,6 @@ import std.typecons;
 import std.typetuple;
 
 import instauser.basic.core;
-
-// Only use instauser.basic.sha if SHA-2 isn't in Phobos (ie, DMD 2.065 and below)
-import phobos_sha = std.digest.sha;
-static if(!is(phobos_sha.SHA512))
-	import instauser.basic.sha;
-else
-	import std.digest.sha;
 
 // TemplateArgsOf only exists in Phobos of DMD 2.066 and up
 private struct dummy(T) {}

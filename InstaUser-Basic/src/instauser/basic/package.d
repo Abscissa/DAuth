@@ -21,19 +21,9 @@ DMD flags to enable InstaUser-Basic unittests, but silence all non-error output:
 -unittest -version=InstaUser_AllowWeakSecurity -version=InstaUserBasic_Unittest -version=InstaUserBasic_Unittest_Quiet
 -------------------
 
-Note that instauser.basic.sha is not automatically included by
-"import instauser.basic;" and must be imported separately. This is because
-it's only in InstaUser-Basic temporarily (until SHA-2 is in Phobos). On
-compilers where SHA-2 exists in Phobos (ie, DMD 2.066 and up), then InstaUser-Basic
-does NOT use instauser.basic.sha.
-
-The module instauser.basic.hashdrbg is also excluded by default because a
-Phobos pull request is in the works.
-
 Import all:
 ------------
 import instauser.basic;
-import instauser.basic.sha;
 import instauser.basic.hashdrbg;
 ------------
 
@@ -53,10 +43,7 @@ version(InstaUserBasic_PrebuiltLib) version = includeEverything;
 version(InstaUserBasic_Unittest)    version = includeEverything;
 
 version(includeEverything)
-{
-	import instauser.basic.sha;
 	import instauser.basic.hashdrbg;
-}
 
 version(InstaUserBasic_Unittest)
 unittest

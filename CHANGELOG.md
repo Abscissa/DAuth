@@ -11,6 +11,8 @@ once DAuth has now become the first component of InstaUser: "InstaUser-Basic".
 [.travis.yml](https://github.com/Abscissa/InstaUser/blob/master/.travis.yml)
 for list of officially supported compilers).
 - **Change**: Perform all builds through [DUB](http://code.dlang.org/getting_started).
+- **Change**: Removed built-in SHA module because its SHA2 implementation is
+already included in Phobos for all supported compilers.
 - **Enhancement:** Tested via [travis.ci](https://travis-ci.org/).
 
 v0.6.3 - 2017/01/31

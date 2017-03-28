@@ -23,16 +23,6 @@ import std.typecons;
 import instauser.basic.random : randomSalt;
 import instauser.basic.hashdrbg;
 
-// Only use instauser.basic.sha if SHA-2 isn't in Phobos (ie, DMD 2.065 and below)
-static if(!is(std.digest.sha.SHA512))
-{
-	import instauser.basic.sha;
-
-	private alias SHA1 = instauser.basic.sha.SHA1;
-	private alias SHA1Digest = instauser.basic.sha.SHA1Digest;
-	private alias sha1Of = instauser.basic.sha.sha1Of;
-}
-
 version(InstaUserBasic_Unittest)
 {
 	version(InstaUserBasic_Unittest_Quiet) {} else
