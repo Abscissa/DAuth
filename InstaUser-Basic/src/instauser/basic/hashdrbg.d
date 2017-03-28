@@ -11,7 +11,14 @@ import std.traits;
 import std.typecons;
 import std.typetuple;
 
-import instauser.basic.core;
+import instauser.basic.digest;
+import instauser.basic.exceptions;
+import instauser.basic.hash;
+import instauser.basic.password;
+import instauser.basic.salt;
+import instauser.basic.strength;
+import instauser.basic.tests;
+import instauser.basic.util;
 
 // TemplateArgsOf only exists in Phobos of DMD 2.066 and up
 private struct dummy(T) {}

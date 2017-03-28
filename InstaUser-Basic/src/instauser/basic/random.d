@@ -15,8 +15,15 @@ import std.random;
 import std.range;
 import std.typecons;
 
-import instauser.basic.core;
+import instauser.basic.digest;
+import instauser.basic.exceptions;
+import instauser.basic.hash;
 import instauser.basic.hashdrbg;
+import instauser.basic.password;
+import instauser.basic.salt;
+import instauser.basic.strength;
+import instauser.basic.tests;
+import instauser.basic.util;
 
 /// In characters. Default length of randomly-generated passwords.
 enum defaultPasswordLength = 20;
@@ -42,6 +49,9 @@ of 12 prevents a padding tilde from existing at the end of every token.
 +/
 enum defaultTokenStrength = 36;
 
+/// Default is Hash_DRBG using SHA-512
+alias DefaultCryptoRand = HashDRBGStream!(SHA512, "InstaUser");
+
 /++
 RNGs used with InstaUser must be either a isRandomStream, or
 a isUniformRNG input range that emits uint values.
@@ -50,6 +60,8 @@ enum isInstaUserRandom(T) =
 	isRandomStream!T ||
 	(isUniformRNG!T && is(ElementType!T == uint));
 alias isDAuthRandom = isInstaUserRandom; /// Temporary backwards-compatibility alias
+
+enum isSomeRandom(T) = instauser.basic.random.isRandomStream!T || std.random.isUniformRNG!T;
 
 /++
 Generates a random password.

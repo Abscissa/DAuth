@@ -13,9 +13,16 @@ import instauser.basic;
 
 module instauser.basic;
 
-public import instauser.basic.core;
+public import instauser.basic.digest;
+public import instauser.basic.exceptions;
+public import instauser.basic.hash;
 public import instauser.basic.hashdrbg;
+public import instauser.basic.password;
 public import instauser.basic.random;
+public import instauser.basic.salt;
+public import instauser.basic.strength;
+public import instauser.basic.tests;
+public import instauser.basic.util;
 
 version(InstaUserBasic_Unittest)
 unittest
