@@ -193,22 +193,20 @@ bool validateUser(string user, char[] pass)
 }
 ```
 
-A Note About InstaUser's Scope
-------------------------------
-InstaUser isn't intended to directly provide any encryption, hashing,
-or random number generating algorithms, and tries to leave this up to other
-libraries (relying on the [Phobos](http://dlang.org/phobos/index.html)-defined
-protocols for [digests](http://dlang.org/phobos/std_digest_digest.html)
-and [random number generators](http://dlang.org/phobos/std_random.html)).
+InstaUser's Policy Toward Implementing Crypto-Related Algorithms
+----------------------------------------------------------------
+InstaUser prefers to avoid directly including crypto-related algorithms,
+instead relying on other libraries for these. But InstaUser will provide
+an implementation of well-known and establisted algorithms when necessary.
 
-At the moment however, InstaUser-Basic does provide implementations of
-[SHA-2](http://en.wikipedia.org/wiki/Sha2) and
-[Hash_DRBG](http://csrc.nist.gov/publications/nistpubs/800-90A/SP800-90A.pdf)
-because (as of DMD 2.066.0) Phobos lacks a
-[cryptographically secure psuedorandom number generator](http://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator)
-and didn't gain SHA-2 until recently (v2.066.0). The intention is to migrate
-Hash_DRBG over to Phobos and eventually eliminate both that and SHA-2
-from InstaUser-Basic itself.
+Currently, the only crypto-related algorthm directly implemented by InstaUser
+is InstaUser's default
+[CSRNG](http://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator),
+[Hash_DRBG](http://csrc.nist.gov/publications/nistpubs/800-90A/SP800-90A.pdf).
+
+Previously, InstaUser (back when it was knowsn as "DAuth") had included its
+own implementation of SHA2, but that implementaion has since been folded into
+Phobos and is no longer part of InstaUser.
 
 See also
 --------
