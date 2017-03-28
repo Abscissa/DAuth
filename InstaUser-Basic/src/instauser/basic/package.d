@@ -1,21 +1,11 @@
 ﻿/++
 Homepage:
-$(LINK https://github.com/abscissa/InstaUser)
+$(LINK https://github.com/Abscissa/InstaUser)
 
 This_API_Reference:
-$(LINK http://semitwist.com/dauth)
+$(LINK http://semitwist.com/instauser)
 
-DMD flags to enable InstaUser-Basic unittests:
--------------------
--unittest -version=InstaUser_AllowWeakSecurity -version=InstaUserBasic_Unittest
--------------------
-
-DMD flags to enable InstaUser-Basic unittests, but silence all non-error output:
--------------------
--unittest -version=InstaUser_AllowWeakSecurity -version=InstaUserBasic_Unittest -version=InstaUserBasic_Unittest_Quiet
--------------------
-
-Import all:
+Import_all:
 ------------
 import instauser.basic;
 ------------
