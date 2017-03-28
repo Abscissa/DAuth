@@ -13,6 +13,7 @@ for list of officially supported compilers).
 - **Change**: Perform all builds through [DUB](http://code.dlang.org/getting_started).
 - **Change**: Removed built-in SHA module because its SHA2 implementation is
 already included in Phobos for all supported compilers.
+- **Change**: Split up "core" module into smaller modules.
 - **Enhancement:** Tested via [travis.ci](https://travis-ci.org/).
 
 v0.6.3 - 2017/01/31
