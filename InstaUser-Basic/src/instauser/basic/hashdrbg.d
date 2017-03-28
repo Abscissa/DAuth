@@ -1,8 +1,4 @@
-﻿/++
-InstaUser-Basic - Salted Hashed Password Library for D
-Hash_DRBG Cryptographic Random Number Generator
-+/
-
+﻿/// Hash_DRBG Cryptographic Random Number Generator
 module instauser.basic.hashdrbg;
 
 import std.conv;

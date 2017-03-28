@@ -1,8 +1,4 @@
-﻿/++
-InstaUser-Basic - Salted Hashed Password Library for D
-Core package
-+/
-module instauser.basic.core;
+﻿module instauser.basic.core;
 
 import std.algorithm;
 import std.array;

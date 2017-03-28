@@ -1,8 +1,4 @@
 ﻿/++
-InstaUser-Basic - Salted Hashed Password Library for D
-
-Writen in the D programming language.
-
 Homepage:
 $(LINK https://github.com/abscissa/InstaUser)
 
@@ -23,11 +19,6 @@ Import all:
 ------------
 import instauser.basic;
 ------------
-
-Copyright: © 2014-2015 Nick Sabalausky
-License: zlib/libpng license, provided in
-	$(LINK2 LICENSE.txt, https://github.com/Abscissa/InstaUser/blob/master/LICENSE.txt).
-Authors: Nick Sabalausky
 +/
 
 module instauser.basic;

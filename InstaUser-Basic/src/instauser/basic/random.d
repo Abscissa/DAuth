@@ -1,9 +1,4 @@
-﻿/++
-InstaUser-Basic - Salted Hashed Password Library for D
-Random generators
-+/
-
-module instauser.basic.random;
+﻿module instauser.basic.random;
 
 import std.algorithm;
 import std.array;
