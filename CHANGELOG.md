@@ -5,7 +5,7 @@ InstaUser - ChangeLog
 
 v0.7.0 - TBD
 -------------------
-- **Major Change:** Project is now named "InstaUser". DAuth has now become "InstaUser-Basic", and two optional new components have been added: InstaUser-Store and InstaUser-Web.
+- **Change:** Project is now named "InstaUser". DAuth has now become the first component of InstaUser: "InstaUser-Basic".
 - **Change**: Perform all builds through [DUB](http://code.dlang.org/getting_started).
 
 v0.6.2 - 2015/03/25
