@@ -26,13 +26,7 @@ version(Windows)
 	import core.runtime;
 }
 
-/++
-Check if T is a stream-like random number generator.
-
-Because std.stream is pending a full replacement, be aware that
-stream-like random number generators currently use a temporary
-design that may change once a new std.stream is available.
-+/
+/// Check if T is a stream-like random number generator.
 enum isRandomStream(T) =
 	is(typeof({
 		static assert(T.isUniformRandomStream);
@@ -57,10 +51,6 @@ uses a system call, not a file path, to retreive system entropy.
 
 On Posix, pathToRandom must NOT be null. If pathToStrongRandom is null,
 then pathToStrongRandom is assumed to be pathToRandom.
-
-Because std.stream is pending a full replacement, be aware that
-stream-like random number generators currently use a temporary
-design that may change once a new std.stream is available.
 
 Declaration:
 -----------------------
@@ -310,10 +300,6 @@ EntropyStream: The source of entropy from which to draw.
 The default is SystemEntropyStream!(), but can be overridden. If you provide
 your own, then it's your responsibility to ensure your entropy source is
 non-deterministic.
-
-Because std.stream is pending a full replacement, be aware that
-stream-like random number generators currently use a temporary
-design that may change once a new std.stream is available.
 
 Declaration:
 -----------------------
