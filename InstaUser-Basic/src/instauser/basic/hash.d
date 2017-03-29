@@ -18,10 +18,7 @@ import instauser.basic.strength;
 import instauser.basic.util;
 
 /// Tests if the type is an instance of struct Hash(some digest)
-template isHash(T)
-{
-	enum isHash = is( Hash!(TemplateArgsOf!(T)[0]) == T );
-}
+enum isHash(T) = isInstanceOf!(Hash, T);
 
 version(InstaUserBasic_Unittest)
 unittest
