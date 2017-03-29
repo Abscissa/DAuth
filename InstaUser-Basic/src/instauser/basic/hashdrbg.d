@@ -11,14 +11,7 @@ import std.traits;
 import std.typecons;
 import std.typetuple;
 
-import instauser.basic.digest;
-import instauser.basic.exceptions;
-import instauser.basic.hash;
-import instauser.basic.password;
-import instauser.basic.salt;
-import instauser.basic.strength;
 import instauser.basic.tests;
-import instauser.basic.util;
 
 version(Windows)
 {

@@ -15,13 +15,9 @@ import std.random;
 import std.range;
 import std.typecons;
 
-import instauser.basic.digest;
-import instauser.basic.exceptions;
-import instauser.basic.hash;
 import instauser.basic.hashdrbg;
 import instauser.basic.password;
 import instauser.basic.salt;
-import instauser.basic.strength;
 import instauser.basic.tests;
 import instauser.basic.util;
 
@@ -51,6 +47,8 @@ enum defaultTokenStrength = 36;
 
 /// Default is Hash_DRBG using SHA-512
 alias DefaultCryptoRand = HashDRBGStream!(SHA512, "InstaUser");
+
+alias TokenBase64 = Base64Impl!('-', '_', '~'); /// Implementation of Base64 engine used for tokens.
 
 /++
 RNGs used with InstaUser must be either a isRandomStream, or
