@@ -1,7 +1,7 @@
 DAuth - Salted Hashed Password Library for D
 ============================================
 
-[[ChangeLog](https://github.com/Abscissa/DAuth/blob/master/CHANGELOG.md)] [[API Reference](http://semitwist.com/dauth/)]
+[[ChangeLog](https://github.com/Abscissa/DAuth/blob/master/CHANGELOG.md)] [[API Reference](http://semitwist.com/dauth/)] [![Build Status](https://travis-ci.org/Abscissa/DAuth.svg?branch=master)](https://travis-ci.org/Abscissa/DAuth)
 
 NOTE: DAuth will soon become rebranded as "InstaUser Basic", the core of a multi-component project, InstaUser. A preview of the current state of InstaUser is [available here on GitHub](https://github.com/Abscissa/InstaUser-preview).
 
@@ -116,14 +116,14 @@ void setPassword(string user, char[] pass)
 	// DAuth knows that MinstdRand and MD5 do NOT provide crypto-grade
 	// security, so it won't allow the following to compile unless you
 	// include the compiler flag: -version=DAuth_AllowWeakSecurity
-	
+
 	// Note: This randomizer is not actually suitable for crypto purposes.
 	static MinstdRand rand;
 	auto salt = randomSalt(rand, 64);
 
 	// Warning! MD5 should never be used for real passwords.
 	auto myHash = makeHash!MD5(pass, salt);
-	
+
 	saveUserInfo(user, "MD5", myHash.hash, myHash.salt);
 }
 
@@ -132,7 +132,7 @@ bool validateUser(string user, char[] pass)
 	string hash = loadUserPassword(user);
 	ubyte[] salt = loadUserSalt(user);
 	ensure(loadUserDigest(user) == "MD5");
-	
+
 	return isSameHash!MD5(pass, hash, salt);
 }
 ```
