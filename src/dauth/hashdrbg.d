@@ -1,4 +1,4 @@
-﻿/++
+/++
 DAuth - Salted Hashed Password Library for D
 Hash_DRBG Cryptographic Random Number Generator
 +/
@@ -16,12 +16,7 @@ import std.typetuple;
 
 import dauth.core;
 
-// Only use dauth.sha if SHA-2 isn't in Phobos (ie, DMD 2.065 and below)
-import phobos_sha = std.digest.sha;
-static if(!is(phobos_sha.SHA512))
-	import dauth.sha;
-else
-	import std.digest.sha;
+import std.digest.sha;
 
 // TemplateArgsOf only exists in Phobos of DMD 2.066 and up
 private struct dummy(T) {}
@@ -85,10 +80,10 @@ struct SystemEntropyStream(string pathToRandom = defaultPathToRandom,
 	{
 		import std.c.windows.windows;
 		import core.runtime;
-		
+
 		static assert(pathToRandom is null, "On Windows, SystemEntropyStream's pathToRandom must be null");
 		static assert(pathToStrongRandom is null, "On Windows, SystemEntropyStream's pathToStrongRandom must be null");
-		
+
 		private static HMODULE _advapi32;
 		private static extern(Windows) BOOL function(void*, uint) _RtlGenRandom;
 	}
@@ -103,11 +98,11 @@ struct SystemEntropyStream(string pathToRandom = defaultPathToRandom,
 	}
 	else
 		static assert(0);
-	 
+
 	/++
 	Fills the buffer with entropy from the system-specific entropy generator.
 	Automatically opens SystemEntropyStream if it's closed.
-	
+
 	If predictionResistance is Yes.PredictionResistance, then this will read
 	from a secondary source (if available), such as /dev/random instead of
 	/dev/urandom, which may block for a noticable amount of time to ensure
@@ -120,7 +115,7 @@ struct SystemEntropyStream(string pathToRandom = defaultPathToRandom,
 	static void read(ubyte[] buf, Flag!"PredictionResistance" predictionResistance = No.PredictionResistance)
 	{
 		open();
-		
+
 		version(Windows)
 		{
 			enforce(buf.length < uint.max, "Cannot read more than uint.max bytes from RtlGenRandom");
@@ -145,7 +140,7 @@ struct SystemEntropyStream(string pathToRandom = defaultPathToRandom,
 	{
 		if(isOpen)
 			return;
-		
+
 		version(Windows)
 		{
 			// Reference: http://blogs.msdn.com/b/michael_howard/archive/2005/01/14/353379.aspx
@@ -160,13 +155,13 @@ struct SystemEntropyStream(string pathToRandom = defaultPathToRandom,
 				if(!f.isOpen)
 				{
 					f = File(path);
-					
+
 					// Disable buffering for security, and to avoid consuming
 					// more system entropy than necessary.
 					f.setvbuf(null, _IONBF);
 				}
 			}
-			
+
 			openFile(devRandom, pathToRandom);
 			if(pathToStrongRandom)
 				openFile(devStrongRandom, pathToStrongRandom);
@@ -174,8 +169,8 @@ struct SystemEntropyStream(string pathToRandom = defaultPathToRandom,
 		else
 			static assert(0);
 	}
-	
-	
+
+
 	///	Manually release the handle/connection to the system-specific entropy generator.
 	static void close()
 	{
@@ -212,7 +207,7 @@ struct SystemEntropyStream(string pathToRandom = defaultPathToRandom,
 		else
 			static assert(0);
 	}
-	
+
 	/// Automatically close upon module destruction.
 	static ~this()
 	{
@@ -268,7 +263,7 @@ version (StdDdoc)
 	/++
 	The path to the default OS-provided cryptographic entropy generator.
 	This should not be a blocking generator.
-	
+
 	On Posix, this is "/dev/urandom". On Windows is empty string, because
 	Windows uses a system call, not a file path, to retreive system entropy.
 	+/
@@ -279,7 +274,7 @@ version (StdDdoc)
 	when Yes.PredictionResistance is requested. This should be at least as
 	strong as defaultPathToRandom. But unlike defaultPathToRandom, this may
 	be a generator that blocks when system entropy is low.
-	
+
 	On Posix, this is "/dev/random". On Windows is empty string, because
 	Windows uses a system call, not a file path, to retreive system entropy.
 	+/
@@ -342,15 +337,15 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 		private enum seedSizeBytes = 440/8; // In bytes
 	else
 		private enum seedSizeBytes = 888/8; // In bytes
-	
+
 	// Securty strength 256 bits. Less could provide insufficitent security,
 	// but more would consume more of the system's entropy for no benefit.
 	// See NIST's [SP800-90A] and [SP800-57] for details on this value.
 	private enum entropySizeBytes = 256/8;
-	
+
 	// This must be at least entropySizeBytes/2
 	private enum nonceSizeBytes = entropySizeBytes/2;
-	
+
 	// value[1..$] is Hash_DRBG's secret working state value V
 	// value[0] is a scratchpad to avoid unnecessary copying/concating of V
 	private static ubyte[seedSizeBytes+1] value;
@@ -362,7 +357,7 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 	// The algorithm's spec permits this to be anything less than or equal to 2^48,
 	// but we should take care not to overflow our actual countner.
 	private enum int maxGenerated = 0x0FFF_FFFF;
-	
+
 	/++
 	If your security needs are high enough that you'd rather risk blocking
 	for an arbitrarily-long period of time while sufficient system entropy
@@ -371,15 +366,15 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 	then set this to Yes.PredictionResistance. The next time a value is
 	generated, the internal state will first be replenished with additional
 	entropy, potentially from a blocking source.
-	
+
 	After the next value is generated, this will automatically reset back
 	to No.PredictionResistance to avoid needlessly consuming the system's
 	available entropy. Note that forcefully setting this to Yes.PredictionResistance
 	before each and every value generated is NOT cryptographically necessary,
 	can quickly starve the system of entropy, and should not be done.
-	
+
 	Default is No.PredictionResistance.
-	
+
 	This setting is for changing read()'s default bahavior. Individual calls
 	to read() can manually override this per call.
 	+/
@@ -389,7 +384,7 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 	Further improve security by setting Hash_DRBG's optional "additional input"
 	for each call to read(). This can be set to a new value before each read()
 	call for maximum effect.
-	
+
 	This setting is for changing read()'s default bahavior. Individual calls
 	to read() can manually override this per call.
 	+/
@@ -400,23 +395,23 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 	{
 		if(inited)
 			return;
-		
+
 		// seedMaterial = entropy ~ nonce ~ custom;
 		ubyte[entropySizeBytes + nonceSizeBytes + custom.length] seedMaterial = void;
 		EntropyStream.read( seedMaterial[0 .. $-custom.length], predictionResistance );
 		seedMaterial[$-custom.length .. $] = cast(ubyte[])custom;
-		
+
 		// Generate seed for V
 		hashDerivation(seedMaterial, null, value[1..$]);
-		
+
 		// Generate constant
 		value[0] = 0x00;
 		hashDerivation(value, null, constant);
-		
+
 		numGenerated = 0;
 		inited = true;
 	}
-	
+
 	private void reseed(ubyte[] extraInput=null)
 	{
 		// seedMaterial = 0x01 ~ V ~ entropy;
@@ -424,23 +419,23 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 		seedMaterial[0] = 0x01;
 		seedMaterial[1 .. $-entropySizeBytes] = value[1..$];
 		EntropyStream.read( seedMaterial[$-entropySizeBytes .. $], predictionResistance );
-		
+
 		// Generate seed for V
 		hashDerivation(seedMaterial, extraInput, value[1..$]);
-		
+
 		// Generate constant
 		value[0] = 0x00;
 		hashDerivation(value, null, constant);
 
 		numGenerated = 0;
 	}
-	
+
 	/++
 	Fills the buffer with random values using the Hash_DRBG algorithm.
-	
+
 	overridePredictionResistance:
 	Override this.predictionResistance setting for this call only.
-	
+
 	overrideExtraInput:
 	Override this.extraInput setting for this call only.
 	+/
@@ -470,9 +465,9 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 
 		if(numGenerated >= maxGenerated || overridePredictionResistance == Yes.PredictionResistance)
 			reseed(overrideExtraInput);
-		
+
 		predictionResistance = No.PredictionResistance;
-		
+
 		if(overrideExtraInput)
 		{
 			value[0] = 0x02;
@@ -484,7 +479,7 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 			tempHash[0..outputSizeBits/8] = sha.finish();
 			addHash!seedSizeBytes(value[1..$], tempHash, value[1..$]);
 		}
-		
+
 		ubyte[seedSizeBytes] workingData = value[1..$];
 		if(buf.length > 0)
 		while(true)
@@ -494,14 +489,14 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 			auto length = buf.length < currHash.length? buf.length : currHash.length;
 			buf[0..length] = currHash[0..length];
 			buf = buf[length..$];
-			
+
 			// Buffer filled?
 			if(buf.length == 0)
 				break;
-			
+
 			incrementHash(workingData);
 		}
-		
+
 		// Update V
 		value[0] = 0x03;
 		ubyte[seedSizeBytes] hashSum = void;
@@ -510,10 +505,10 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 		addHash!seedSizeBytes(hashSum, value[1..$], hashSum);
 		addHash!seedSizeBytes(hashSum, constant, hashSum);
 		addHash!seedSizeBytes(hashSum, numGenerated+1, value[1..$]);
-		
+
 		numGenerated++;
 	}
-	
+
 	private static void hashDerivation(ubyte[] input, ubyte[] extraInput, ubyte[] buf)
 	{
 		ubyte counter = 1;
@@ -528,16 +523,16 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 			if(extraInput)
 				sha.put(extraInput);
 			auto currHash = sha.finish();
-			
+
 			// Fill the front of buf with the hashed data
 			auto length = buf.length < currHash.length? buf.length : currHash.length;
 			buf[0..length] = currHash[0..length];
 			buf = buf[length..$];
-			
+
 			counter++;
 		}
 	}
-	
+
 	private static void incrementHash(int numBytes)(ref ubyte[numBytes] arr)
 	{
 		// Endianness (small, big or even weird mixes) doesn't matter since hashes
@@ -556,7 +551,7 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 		ubyte[numBytes] arr2, ubyte[] result)
 	{
 		// As with incrementHash, endianness doesn't matter here.
-		
+
 		enforce(arr1.length == arr2.length);
 		enforce(arr1.length == result.length);
 		uint carry = 0;
@@ -572,7 +567,7 @@ struct HashDRBGStream(TSHA = SHA512, string custom = "D Crypto RNG", EntropyStre
 		ubyte[] result)
 	{
 		// As with incrementHash, endianness doesn't matter here.
-		
+
 		enforce(arr.length == result.length);
 		uint carry = value;
 		foreach(i; 0..arr.length)
@@ -658,11 +653,11 @@ version(DAuth_Unittest)
 unittest
 {
 	unitlog("Testing HashDRBGStream.incrementHash");
-	
+
 	HashDRBGStream!SHA1 rand;
 	ubyte[5] val      = [0xFF, 0xFF, 0b0000_1011, 0x00, 0x00];
 	ubyte[5] expected = [0x00, 0x00, 0b0000_1100, 0x00, 0x00];
-	
+
 	assert(val != expected);
 	rand.incrementHash(val);
 	assert(val == expected);
@@ -672,13 +667,13 @@ version(DAuth_Unittest)
 unittest
 {
 	unitlog("Testing HashDRBGStream.addHash(arr,arr,arr)");
-	
+
 	HashDRBGStream!SHA1 rand;
 	ubyte[5] val1     = [0xCC, 0x05, 0xFE, 0x01, 0x00];
 	ubyte[5] val2     = [0x33, 0x02, 0x9E, 0x00, 0x00];
 	ubyte[5] expected = [0xFF, 0x07, 0x9C, 0x02, 0x00];
 	ubyte[5] result;
-	
+
 	assert(result != expected);
 	rand.addHash(val1, val2, result);
 	assert(result == expected);
@@ -688,13 +683,13 @@ version(DAuth_Unittest)
 unittest
 {
 	unitlog("Testing HashDRBGStream.addHash(arr,int,arr)");
-	
+
 	HashDRBGStream!SHA1 rand;
 	ubyte[5] val1     = [0xCC, 0x05, 0xFE, 0x01, 0x00];
 	uint val2         = 0x009E_0233;
 	ubyte[5] expected = [0xFF, 0x07, 0x9C, 0x02, 0x00];
 	ubyte[5] result;
-	
+
 	assert(result != expected);
 	rand.addHash(val1, val2, result);
 	assert(result == expected);
@@ -722,13 +717,13 @@ struct WrappedStreamRNG(RandomStream, StaticUByteArr)
 	if(isRandomStream!RandomStream && isStaticArray!StaticUByteArr && is(ElementType!StaticUByteArr==ubyte))
 {
 	enum isUniformRandom = true; /// Mark this as a Rng
-	
+
 	private StaticUByteArr _front;
 	private bool inited = false;
-	
+
 	/// Access to underlying RandomStream so RNG-specific functionality can be accessed.
 	RandomStream stream;
-	
+
 	/// Implements an InputRange
 	@property StaticUByteArr front()
 	{
@@ -737,22 +732,22 @@ struct WrappedStreamRNG(RandomStream, StaticUByteArr)
 			popFront();
 			inited = true;
 		}
-		
+
 		return _front;
 	}
-	
+
 	///ditto
 	void popFront()
 	{
 		stream.read(_front);
 	}
-	
+
 	/// Infinite range. Never empty.
 	enum empty = false;
-	
+
 	/// Smallest generated value.
 	enum min = StaticUByteArr.init;
-	
+
 	/// Largest generated value.
 	static @property StaticUByteArr max()
 	{
@@ -767,25 +762,25 @@ struct WrappedStreamRNG(RandomStream, UIntType)
 	if(isRandomStream!RandomStream && isUnsigned!UIntType)
 {
 	private WrappedStreamRNG!(RandomStream, ubyte[UIntType.sizeof]) bytesImpl;
-	
+
 	enum isUniformRandom = true; /// Mark this as a Rng
-	
+
 	private UIntType _front;
 	private bool inited = false;
-	
+
 	/// Implements an InputRange
 	@property UIntType front()
 	{
 		auto val = bytesImpl.front;
 		return *(cast(UIntType*) &val);
 	}
-	
+
 	///ditto
 	void popFront()
 	{
 		bytesImpl.popFront();
 	}
-	
+
 	enum empty = false; /// Infinite range. Never empty.
 	enum min = UIntType.min; /// Smallest generated value.
 	enum max = UIntType.max; /// Largest generated value.
@@ -805,29 +800,29 @@ unittest
 		HashDRBGStream!SHA512_256,
 		HashDRBGStream!(SHA512, "other custom str"),
 	);
-	
+
 	unitlog("Testing SystemEntropyStream/HashDRBGStream");
 	foreach(RandStream; RandStreamTypes)
 	{
 		//unitlog("Testing RandStream: "~RandStream.stringof);
-		
+
 		RandStream rand;
 		ubyte[] values1;
 		ubyte[] values2;
 		values1.length = 10;
 		values2.length = 10;
-		
+
 		rand.read(values1);
 		assert(values1 != typeof(values1).init);
 		assert(values1[0..4] != values1[4..8]);
 		rand.read(values2);
 		assert(values1 != values2);
-		
+
 		auto randCopy = rand;
 		rand.read(values1);
 		randCopy.read(values2);
 		assert(values1 != values2);
-		
+
 		static if(!is(RandStream == SystemEntropyStream!()))
 		{
 			values2[] = ubyte.init;
@@ -835,11 +830,11 @@ unittest
 			values1[] = ubyte.init;
 			rand.read(values1, Yes.PredictionResistance);
 			assert(values1 != values2);
-			
+
 			values1[] = ubyte.init;
 			rand.read(values1, cast(ubyte[])"additional input");
 			assert(values1 != values2);
-			
+
 			values1[] = ubyte.init;
 			rand.read(values1, Yes.PredictionResistance, cast(ubyte[])"additional input");
 			assert(values1 != values2);
@@ -874,7 +869,7 @@ unittest
 {
 	// Don't test ubyte or ushort versions here because legitimate repeated
 	// values are too likely and would trigger a failure and unfounded worry.
-	
+
 	alias RandTypes = TypeTuple!(
 		SystemEntropy!ulong,
 		SystemEntropy!uint,
@@ -892,7 +887,7 @@ unittest
 		HashDRBG!(ubyte[5], SHA512),
 		HashDRBG!(ubyte[1024], SHA512),
 	);
-	
+
 	unitlog("Testing SystemEntropy/HashDRBG");
 	foreach(Rand; RandTypes)
 	{
@@ -900,7 +895,7 @@ unittest
 
 		Rand rand;
 		assert(!rand.empty);
-		
+
 		assert(rand.front == rand.front);
 		auto val = rand.front;
 		assert(val != ElementType!(Rand).init);
