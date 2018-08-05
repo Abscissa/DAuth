@@ -701,7 +701,7 @@ Hash!Digest parseHash(string str,
 	Digest delegate(string) digestFromDAuthCode = toDelegate(&defaultDigestFromCode),
 	Digest delegate(string) digestFromCryptCode = toDelegate(&defaultDigestFromCryptCode))
 {
-	enforceEx!ConvException(!str.empty);
+	enforce!ConvException(!str.empty);
 	if(str[0] == '[')
 		return parseDAuthHash(str, digestFromDAuthCode);
 	else if(str[0] == '$' || str.length == 13)
@@ -718,19 +718,19 @@ Hash!Digest parseDAuthHash(string str,
 	auto bytes = cast(immutable(ubyte)[]) str;
 	
 	// Parse '['
-	enforceEx!ConvException(!bytes.empty);
-	enforceEx!ConvException(bytes.front == cast(ubyte)'[');
+	enforce!ConvException(!bytes.empty);
+	enforce!ConvException(bytes.front == cast(ubyte)'[');
 	bytes.popFront();
 
 	// Parse digest code
 	auto splitRBracket = bytes.findSplit([']']);
-	enforceEx!ConvException( !splitRBracket[0].empty && !splitRBracket[1].empty && !splitRBracket[2].empty );
+	enforce!ConvException( !splitRBracket[0].empty && !splitRBracket[1].empty && !splitRBracket[2].empty );
 	auto digestCode = splitRBracket[0];
 	bytes = splitRBracket[2];
 	
 	// Split salt and hash
 	auto splitDollar = bytes.findSplit(['$']);
-	enforceEx!ConvException( !splitDollar[0].empty && !splitDollar[1].empty && !splitDollar[2].empty );
+	enforce!ConvException( !splitDollar[0].empty && !splitDollar[1].empty && !splitDollar[2].empty );
 	auto salt = splitDollar[0];
 	auto hash = splitDollar[2];
 	
@@ -750,7 +750,7 @@ Hash!Digest parseCryptHash(string str,
 	// No need to mess with UTF
 	auto bytes = cast(immutable(ubyte)[]) str;
 
-	enforceEx!ConvException(!bytes.empty);
+	enforce!ConvException(!bytes.empty);
 	
 	// Old crypt-DES style?
 	if(bytes[0] != cast(ubyte)'$' && bytes.length == 13)
@@ -768,12 +768,12 @@ Hash!Digest parseCryptHash(string str,
 	}
 	
 	// Parse initial '$'
-	enforceEx!ConvException(bytes.front == cast(ubyte)'$');
+	enforce!ConvException(bytes.front == cast(ubyte)'$');
 	bytes.popFront();
 	
 	// Split digest code, salt and hash
 	auto parts = bytes.splitter('$').array();
-	enforceEx!ConvException(parts.length == 3);
+	enforce!ConvException(parts.length == 3);
 	auto digestCode = parts[0];
 	auto salt       = parts[1];
 	auto hash       = parts[2];
@@ -867,19 +867,19 @@ unittest
 	// For validity of sanity checks, these sha/md5 and base64 strings
 	// were NOT generated using Phobos.
 	auto plainText1        = dupPassword("hello world");
-	enum md5Hash1          = cast(ubyte[16]) x"5eb63bbbe01eeed093cb22bb8f5acdc3";
+	enum md5Hash1          = cast(ubyte[16]) hexString!"5eb63bbbe01eeed093cb22bb8f5acdc3";
 	enum md5Hash1Base64    = "XrY7u+Ae7tCTyyK7j1rNww==";
-	enum sha1Hash1         = cast(ubyte[20]) x"2aae6c35c94fcfb415dbe95f408b9ce91ee846ed";
+	enum sha1Hash1         = cast(ubyte[20]) hexString!"2aae6c35c94fcfb415dbe95f408b9ce91ee846ed";
 	enum sha1Hash1Base64   = "Kq5sNclPz7QV2+lfQIuc6R7oRu0=";
-	enum sha512Hash1       = cast(ubyte[64]) x"309ecc489c12d6eb4cc40f50c902f2b4d0ed77ee511a7c7a9bcd3ca86d4cd86f989dd35bc5ff499670da34255b45b0cfd830e81f605dcf7dc5542e93ae9cd76f";
+	enum sha512Hash1       = cast(ubyte[64]) hexString!"309ecc489c12d6eb4cc40f50c902f2b4d0ed77ee511a7c7a9bcd3ca86d4cd86f989dd35bc5ff499670da34255b45b0cfd830e81f605dcf7dc5542e93ae9cd76f";
 	enum sha512Hash1Base64 = "MJ7MSJwS1utMxA9QyQLytNDtd+5RGnx6m808qG1M2G+YndNbxf9JlnDaNCVbRbDP2DDoH2Bdz33FVC6TrpzXbw==";
 
 	auto plainText2        = dupPassword("some salt");
-	enum md5Hash2          = cast(ubyte[16]) x"befbc24b5c6a74591c0d8e6397b8a398";
+	enum md5Hash2          = cast(ubyte[16]) hexString!"befbc24b5c6a74591c0d8e6397b8a398";
 	enum md5Hash2Base64    = "vvvCS1xqdFkcDY5jl7ijmA==";
-	enum sha1Hash2         = cast(ubyte[20]) x"78bc8b0e186b0aa698f12dc27736b492e4dacfc8";
+	enum sha1Hash2         = cast(ubyte[20]) hexString!"78bc8b0e186b0aa698f12dc27736b492e4dacfc8";
 	enum sha1Hash2Base64   = "eLyLDhhrCqaY8S3Cdza0kuTaz8g=";
-	enum sha512Hash2       = cast(ubyte[64]) x"637246608760dc79f00d3ad4fd26c246bb217e10f811cdbf6fe602c3981e98b8cadacadc452808ae393ac46e8a7e967aa99711d7fd7ed6c055264787f8043693";
+	enum sha512Hash2       = cast(ubyte[64]) hexString!"637246608760dc79f00d3ad4fd26c246bb217e10f811cdbf6fe602c3981e98b8cadacadc452808ae393ac46e8a7e967aa99711d7fd7ed6c055264787f8043693";
 	enum sha512Hash2Base64 = "Y3JGYIdg3HnwDTrU/SbCRrshfhD4Ec2/b+YCw5gemLjK2srcRSgIrjk6xG6KfpZ6qZcR1/1+1sBVJkeH+AQ2kw==";
 	
 	unitlog("Sanity checking unittest's data");
