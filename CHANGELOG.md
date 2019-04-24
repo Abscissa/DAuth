@@ -3,6 +3,10 @@ DAuth - ChangeLog
 
 (Dates below are YYYY/MM/DD)
 
+v0.6.4 - 2019/04/24
+-------------------
+- **Fixed:** [#8](https://github.com/Abscissa/DAuth/issues/8): Fixed for DMD 2.086, drop support for DMD 2.065 and below. (@John-Colvin)
+
 v0.6.3 - 2017/01/31
 -------------------
 - **Fixed:** [#4](https://github.com/Abscissa/DAuth/issues/4): Randomness returns same value in separate executions.
