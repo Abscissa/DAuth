@@ -1,3 +1,4 @@
+/// Handles Phobos-style digests
 module instauser.basic.digest;
 
 import std.digest.crc;
@@ -8,9 +9,29 @@ import std.traits;
 
 import instauser.basic.exceptions;
 import instauser.basic.hash;
+import instauser.basic.hasher;
 
 alias DefaultDigest = SHA512; /// Default is SHA-512
 alias DefaultDigestClass = WrapperDigest!DefaultDigest; /// OO-style version of 'DefaultDigest'.
+
+struct DigestHasher(Digest) if(isDigest!Digest)
+{
+	static enum hashLength = digestLength!Digest;
+
+	Digest digest;
+	Salter!Digest salter = defaultSalter!Digest;
+
+	ubyte[hashLength] hash(Password pass, Salt salt)
+	{
+		static if(isDigest!TDigest) // template-based digest
+			digest.start();
+		else
+			digest.reset(); // OO-based digest
+		
+		salter(digest, password, salt);
+		return digest.finish();
+	}
+}
 
 /++
 Default implementation of 'digestCodeOfObj' for InstaUser-style hash strings.

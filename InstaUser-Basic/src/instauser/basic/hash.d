@@ -11,6 +11,7 @@ import std.traits;
 
 import instauser.basic.digest;
 import instauser.basic.exceptions;
+import instauser.basic.hasher;
 import instauser.basic.password;
 import instauser.basic.random : randomSalt;
 import instauser.basic.salt;
@@ -42,7 +43,7 @@ unittest
 Contains all the relevant information for a salted hash.
 Note the digest type can be obtained via DigestOf!(SomeHashType).
 +/
-struct Hash(TDigest) if(isAnyDigest!TDigest)
+struct Hash(Hasher) if(isHasher!Hasher)
 {
 	Salt salt; /// The salt that was used.
 	
@@ -50,10 +51,10 @@ struct Hash(TDigest) if(isAnyDigest!TDigest)
 	The hash of the salted password. To obtain a printable DB-friendly
 	string, pass this to std.digest.digest.toHexString.
 	+/
-	AnyDigestType!TDigest hash;
+	RawHashType!Hasher rawHash;
 	
-	/// The digest that was used for hashing.
-	TDigest digest;
+	/// The hasher that was used for hashing.
+	Hasher hasher;
 	
 	/++
 	Encodes the digest, salt and hash into a convenient forward-compatible
@@ -93,20 +94,20 @@ struct Hash(TDigest) if(isAnyDigest!TDigest)
 	Optional_Params:
 	digestCodeOfObj - Default value is 'toDelegate(&defaultDigestCodeOfObj)'
 	+/
-	string toString(string delegate(Digest) digestCodeOfObj = toDelegate(&defaultDigestCodeOfObj))
+	string toString(string delegate(Hasher) hasherCodeOfObj = toDelegate(&defaultHasherCodeOfObj))
 	{
 		Appender!string sink;
-		toString(sink, digestCodeOfObj);
+		toString(sink, hasherCodeOfObj);
 		return sink.data;
 	}
 
 	///ditto
 	void toString(Sink)(ref Sink sink,
-		string delegate(Digest) digestCodeOfObj = toDelegate(&defaultDigestCodeOfObj))
+		string delegate(Hasher) digestCodeOfObj = toDelegate(&defaultHasherCodeOfObj))
 		if(isOutputRange!(Sink, const(char)))
 	{
 		sink.put('[');
-		sink.put(getDigestCode(digestCodeOfObj, digest));
+		sink.put(getHasherCode(hasherCodeOfObj, hasher));
 		sink.put(']');
 		Base64.encode(salt, sink);
 		sink.put('$');
@@ -132,20 +133,20 @@ struct Hash(TDigest) if(isAnyDigest!TDigest)
 
 	See also: $(LINK https://en.wikipedia.org/wiki/Crypt_%28C%29)
 	+/
-	string toCryptString(string delegate(Digest) digestCodeOfObj = toDelegate(&defaultDigestCryptCodeOfObj))
+	string toCryptString(string delegate(Hasher) hasherCodeOfObj = toDelegate(&defaultHasherCryptCodeOfObj))
 	{
 		Appender!string sink;
-		toCryptString(sink, digestCodeOfObj);
+		toCryptString(sink, hasherCodeOfObj);
 		return sink.data;
 	}
 
 	///ditto
 	void toCryptString(Sink)(ref Sink sink,
-		string delegate(Digest) digestCodeOfObj = toDelegate(&defaultDigestCryptCodeOfObj))
+		string delegate(Hasher) hasherCodeOfObj = toDelegate(&defaultHasherCryptCodeOfObj))
 		if(isOutputRange!(Sink, const(char)))
 	{
 		sink.put('$');
-		sink.put(getDigestCode(digestCodeOfObj, digest));
+		sink.put(getHasherCode(hasherCodeOfObj, hasher));
 		sink.put('$');
 		Base64.encode(salt, sink);
 		sink.put('$');
@@ -230,7 +231,7 @@ private Hash!TDigest makeHashImpl(TDigest)
 		ret.digest.reset(); // OO-based digest
 	
 	salter(ret.digest, password, salt);
-	ret.hash = ret.digest.finish();
+	ret.rawHash = ret.digest.finish();
 	
 	return ret;
 }

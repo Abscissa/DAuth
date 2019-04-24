@@ -1,6 +1,7 @@
 {
 	"fileVersion": 1,
 	"versions": {
+		"botan": "1.12.10",
 		"scriptlike": "0.10.2"
 	}
 }

@@ -7,6 +7,8 @@ license     "zlib/libpng"
 targetName  "instauser-basic"
 sourcePaths "src"
 
+dependency "botan:passhash" version="==1.12.8"
+
 configuration "library" {
 	targetType "library"
 	targetPath "lib"
