@@ -21,18 +21,12 @@ DMD flags to enable DAuth unittests, but silence all non-error output:
 -unittest -version=DAuth_AllowWeakSecurity -version=DAuth_Unittest -version=DAuth_Unittest_Quiet
 -------------------
 
-Note that dauth.sha is not automatically included by "import dauth;" and must
-be imported separately. This is because it's only in DAuth temporarily (until
-SHA-2 is in Phobos). On compilers where SHA-2 exists in Phobos (ie, DMD 2.066
-and up), then DAuth does NOT use dauth.sha.
-
 The module dauth.hashdrbg is also excluded by default because a Phobos pull request
 is in the works.
 
 Import all:
 ------------
 import dauth;
-import dauth.sha;
 import dauth.hashdrbg;
 ------------
 
@@ -49,7 +43,6 @@ public import dauth.random;
 
 version(DAuth_Unittest)
 {
-	import dauth.sha;
 	import dauth.hashdrbg;
 
 	unittest
