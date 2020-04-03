@@ -25,7 +25,7 @@ static if(!is(std.traits.TemplateArgsOf!(dummy!int)))
 
 version(Windows)
 {
-	import std.c.windows.windows;
+	import core.sys.windows.windows;
 	import core.runtime;
 }
 
@@ -78,7 +78,7 @@ struct SystemEntropyStream(string pathToRandom = defaultPathToRandom,
 
 	version(Windows)
 	{
-		import std.c.windows.windows;
+		import core.sys.windows.windows;
 		import core.runtime;
 
 		static assert(pathToRandom is null, "On Windows, SystemEntropyStream's pathToRandom must be null");
